@@ -84,8 +84,12 @@ Your own hooks and settings are left exactly as they were.
 
 ## Status
 
-M0. The hub reads Claude Code's hooks and a menu bar item shows what needs you.
-The creature itself is M1.
+**M0 works.** The hub reads Claude Code's hooks, pushes state over a socket, and a menu
+bar item shows what needs you — including telling "the hub is gone" apart from "all quiet."
+
+**M1 is underway.** The floating panel, the creature input contract, and the failed-run
+detection are done. What's left is the creature itself, which needs someone to draw it in
+the Rive editor ([#9](https://github.com/manuelescobar-dev/gargoyle/issues/9)).
 
 ## Docs
 
