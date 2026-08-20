@@ -1,6 +1,7 @@
 # The seam
 
-JSON over a WebSocket on `127.0.0.1:7373`. Types are hand-written on both sides against this file.
+JSON over a WebSocket at `ws://127.0.0.1:7373/socket`. The same port serves `POST /event`
+for sources and `GET /health` for `doctor`. Types are hand-written on both sides against this file.
 
 No codegen. For roughly ten message types across two languages, a schema pipeline is more machinery
 than the thing it protects — see [0005](../decisions/0005-a-surface-not-a-suite.md) for why we apply
@@ -15,7 +16,8 @@ and it's what makes the pet structurally unable to accumulate logic.
 
 ### `state` — the entire visual state
 
-Sent whenever anything changes. The pet renders this and keeps nothing.
+Sent on connect, then only when something actually changes. An idle machine produces no
+traffic at all. The pet renders this and keeps nothing.
 
 ```jsonc
 {
@@ -73,11 +75,15 @@ of them is blocked. That's the whole vocabulary it needs — which is why a cron
 message, and a coding agent can all be embers without the pet learning anything new.
 
 **`unknown` is the pet's own.** If the socket drops, the pet enters `unknown` immediately and by
-itself. It does not wait to be told, because the thing that would tell it is gone.
+itself. It does not wait to be told, because the thing that would tell it is gone. It then
+reconnects with backoff, and a single malformed frame on a *live* socket is ignored rather than
+treated as a disconnect — the last snapshot was true a moment ago and nothing says otherwise.
 
 ## Not on the wire yet
 
-`asleep` requires user-idle detection. `failed` requires transcript inspection
-([#11](https://github.com/manuelescobar-dev/gargoyle/issues/11)). `listening` requires push-to-talk.
-All three are in the state vocabulary and none are reachable yet — deliberately, since a state the
-hub can't honestly produce shouldn't be faked.
+`asleep` requires user-idle detection and `listening` requires push-to-talk. Both are in the
+vocabulary and neither is reachable yet — deliberately, since a state the hub can't honestly
+produce shouldn't be faked.
+
+`failed` is now reachable, from Claude Code's `StopFailure` hook — see
+[decisions/0006](../decisions/0006-hook-mapping.md).

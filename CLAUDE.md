@@ -34,6 +34,13 @@ arguing for it.
 **No verticals.** Gargoyle ships the attention model and the Claude Code integration, nothing else.
 Anything can POST to `/event`. See [decisions/0005](decisions/0005-a-surface-not-a-suite.md).
 
+## TypeScript without a build step
+
+Node runs `.ts` directly by stripping types, which means **only syntax that erases** is
+allowed. No parameter properties (`constructor(private x: T)`), no `enum`, no `namespace`,
+no decorators — anything that emits runtime code fails at load with
+`ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX`. Use plain fields, `const` objects, and `as const`.
+
 ## Tests
 
 TDD. Write the failing test first. **A bug fix must include a test that fails on the buggy code and

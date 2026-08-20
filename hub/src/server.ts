@@ -11,7 +11,7 @@ export const PORT = 7373;
  *
  * No framework. It's two routes.
  */
-export function createHub(sessions = new Sessions()) {
+export function createHub(sessions = new Sessions(), onChange: (s: ReturnType<typeof snapshot>) => void = () => {}) {
   // `doctor` needs to distinguish "wired up correctly" from "wired up and never fired",
   // which is the failure that otherwise looks exactly like everything being fine.
   const startedAt = Date.now();
@@ -31,6 +31,8 @@ export function createHub(sessions = new Sessions()) {
           if (event) {
             sessions.apply(event);
             eventsReceived++;
+            sessions.prune();
+            onChange(snapshot(sessions.list()));
           }
         } catch {
           // ignored on purpose: unparseable input is the sender's problem

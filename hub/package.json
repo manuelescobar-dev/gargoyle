@@ -17,5 +17,8 @@
   },
   "bin": {
     "gargoyle": "src/cli.ts"
+  },
+  "dependencies": {
+    "ws": "^8.21.3"
   }
 }
