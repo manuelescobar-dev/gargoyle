@@ -6,8 +6,6 @@
 
 ![status](https://img.shields.io/badge/status-design_phase-orange?style=flat-square)
 ![platform](https://img.shields.io/badge/platform-macOS-black?style=flat-square&logo=apple&logoColor=white)
-![pet](https://img.shields.io/badge/pet-Swift_·_Rive-F05138?style=flat-square&logo=swift&logoColor=white)
-![hub](https://img.shields.io/badge/hub-Node-5FA04E?style=flat-square&logo=node.js&logoColor=white)
 
 </div>
 
