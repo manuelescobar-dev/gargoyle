@@ -40,7 +40,7 @@ TDD. Write the failing test first. **A bug fix must include a test that fails on
 passes on the fix** — no exceptions, and it goes at the layer where the bug lived.
 
 Coverage is proportional to risk, not to a percentage. Full reasoning in
-[CONTRIBUTING.md](CONTRIBUTING.md#testing).
+[ENGINEERING.md](ENGINEERING.md#testing).
 
 ## Commands
 
