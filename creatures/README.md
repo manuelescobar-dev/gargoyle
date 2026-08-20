@@ -52,10 +52,13 @@ be told, because the thing that would tell it is what disappeared.
 ## What the `.riv` must expose
 
 The hub sets these; the state machine inside the file decides what they look like.
+The pet builds them in `CreatureInputs` (`pet/Sources/GargoyleCore/Domain/CreatureInputs.swift`),
+and the state indices are pinned by a test — **appending to the vocabulary is safe,
+reordering it silently changes what every creature displays.**
 
 | input | type | range | meaning |
 |---|---|---|---|
-| `state` | number | 0–8 | index into the nine states above |
+| `state` | number | 0–8 | index into the nine states above, **in that order** |
 | `load` | number | 0–8+ | how many embers it's holding |
 | `blocked` | number | 0–8+ | how many of them need you |
 | `mood` | number | 0–1 | drives the palette. calm → frazzled |
