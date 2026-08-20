@@ -51,16 +51,11 @@ terminal, approve the prompt, open a worktree.
 
 ## Status
 
-Design phase — nothing is built yet. Next up is **M0**: a hub, Claude Code hooks, and a menu-bar item that
-says *"2 agents need you."* No creature at all. If it doesn't earn a glance, the idea dies cheap.
+Design phase. The story and the principles are written; nothing is built yet.
 
 ## Docs
 
 | | |
 |---|---|
-| [Principles](docs/principles.md) | The rules the creature has to obey |
-| [Architecture](docs/architecture.md) | Hub, pet, and why each piece is what it is |
-| [Creature contract](docs/creatures.md) | What it takes to add a creature to the roster |
-| [Roadmap](docs/roadmap.md) | M0 → M4 |
-| [Open questions](docs/open-questions.md) | Known unknowns |
-| [Prior art](docs/prior-art.md) | The genre, and the gap in it |
+| [The story](docs/story.md) | Where desktop creatures came from, the gap none of them fill, and what we're making |
+| [Principles](docs/principles.md) | The values the project lives by, and the rules that fall out of them |
