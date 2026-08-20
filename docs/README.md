@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| [principles.md](principles.md) | Why the creature's body is the display, and the rules that fall out of it |
+| [principles.md](principles.md) | The values the project lives by, and the rules that fall out of them |
 | [architecture.md](architecture.md) | The hub/pet split, the stack, and what to get right early |
 | [creatures.md](creatures.md) | The contract a creature implements, and the state vocabulary |
 | [roadmap.md](roadmap.md) | M0 → M4, and the feature the whole thing is for |
