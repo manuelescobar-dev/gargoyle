@@ -1,12 +1,20 @@
 # Creatures
 
-A creature is two files.
+A creature is a body and a voice.
 
 ```
 creatures/octopus/
-  octopus.riv     the body   — animation and state machine
-  persona.md      the voice  — name, temperament, how it speaks
+  persona.md      the voice — name, temperament, how it speaks
+  previews/       what each state looks like, rendered from the code
 ```
+
+The octopus's body is **drawn in code** — `OctopusPose` computes the geometry, `OctopusView`
+draws it. The mechanic is arithmetic (arms are a function of `load` and `blocked`), so every
+in-between state comes free where keyframing would need each one authored. See
+[decisions/0002](../decisions/0002-swift-and-rive-for-the-pet.md).
+
+A future creature can still be a `.riv` fed the same inputs. The contract is the seam,
+not the file format.
 
 Gargoyle is a roster. Creatures are swapped by hand, never automatically — your eye learns a creature's
 silhouette without you noticing, and rotating it on a timer would throw that away every morning.
@@ -49,7 +57,7 @@ creature must not break.
 checking the real thing. When the socket drops, the creature enters this state on its own — it doesn't wait to
 be told, because the thing that would tell it is what disappeared.
 
-## What the `.riv` must expose
+## What a creature must expose
 
 The hub sets these; the state machine inside the file decides what they look like.
 The pet builds them in `CreatureInputs` (`pet/Sources/GargoyleCore/Domain/CreatureInputs.swift`),

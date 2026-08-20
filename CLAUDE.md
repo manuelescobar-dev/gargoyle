@@ -25,10 +25,14 @@ arrive as the same shape. Only files in `src/sources/` may know what a vendor pa
 exception is entering `unknown` when the socket drops — see
 [decisions/0003](decisions/0003-snapshots-not-diffs.md).
 
-**Never invent a state the hub can't honestly produce.** `failed` is unreachable today because the
-Stop hook doesn't report success. Three honest statuses beat four with one guessed.
+**Never invent a state the hub can't honestly produce.** `asleep` and `listening` are in the
+vocabulary and deliberately unreachable — no user-idle detection, no push-to-talk yet. A state we
+can't honestly produce doesn't get faked.
 
-**Two dependencies total** — Rive in the pet, `ws` in the hub. A third needs a decision record
+**A state must differ *visibly*, not just numerically.** `unknown` and `idle` once passed a `!=`
+test while rendering identically. Assert the difference you'd see at 48px in your peripheral vision.
+
+**One dependency total** — `ws` in the hub. The pet has none. A second needs a decision record
 arguing for it.
 
 **No verticals.** Gargoyle ships the attention model and the Claude Code integration, nothing else.
@@ -52,11 +56,14 @@ Coverage is proportional to risk, not to a percentage. Full reasoning in
 ## Commands
 
 ```bash
-cd hub && npm test        # 19 tests
+cd hub && npm test        # 51 tests
 cd hub && npm run check   # biome, formats and lints
 cd hub && npm start       # hub on 127.0.0.1:7373
 
-cd pet && swift test      # 16 tests
+cd pet && swift test      # 38 tests
+
+# regenerate the creature previews after changing how it's drawn
+cd pet && GARGOYLE_RENDER_PREVIEWS=1 swift test --filter renderPreviews
 cd pet && swift run Gargoyle
 ```
 
@@ -70,10 +77,10 @@ change that file, or one side goes quiet without failing.
 hub/src/domain/    what the creature shows. knows nothing about sources or transport
 hub/src/sources/   vendor payload → domain Event. the only place Claude Code is named
 hub/src/server.ts  HTTP boundary
-pet/…/Domain/      Snapshot, MenuBarPresentation. pure — no AppKit, no URLSession
-pet/…/Transport/   HubClient. URLSession only
-pet/…/UI/          AppKit only. decides nothing
-creatures/         one folder per creature: a .riv and a persona.md
+pet/…/Domain/      Snapshot, CreatureInputs, OctopusPose. pure — no AppKit, no networking
+pet/…/Transport/   HubConnection. the socket, and nothing else
+pet/…/UI/          AppKit only. draws a pose, decides nothing
+creatures/         per creature: a persona.md, and previews rendered from the code
 protocol/          the hub↔pet wire format
 decisions/         why things are the way they are
 docs/              the story and the principles. no implementation detail lives here

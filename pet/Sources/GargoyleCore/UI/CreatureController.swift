@@ -1,0 +1,70 @@
+import AppKit
+
+/// Puts the creature on screen and keeps it current.
+@MainActor
+public final class CreatureController {
+  private let panel = CreaturePanel()
+  private let view: OctopusView
+  private var inputs = CreatureInputs.from(nil)
+  private var breath: Double = 0
+  private var link: CADisplayLink?
+
+  /// How far away the cursor can be and still be worth looking at.
+  private static let gazeReach: Double = 600
+
+  public init() {
+    view = OctopusView(frame: panel.contentLayoutRect)
+    view.autoresizingMask = [.width, .height]
+    panel.contentView = view
+    moveHome()
+    panel.orderFront(nil)
+    apply(nil)
+    startAnimating()
+  }
+
+  public func apply(_ snapshot: Snapshot?) {
+    inputs = CreatureInputs.from(snapshot)
+    refresh()
+  }
+
+  /// Bottom-right by default. It has a home and it stays there — a creature you have to
+  /// hunt for is one you stop glancing at.
+  private func moveHome() {
+    guard let screen = NSScreen.main else { return }
+    let size = panel.frame.size
+    panel.setFrameOrigin(
+      NSPoint(
+        x: screen.visibleFrame.maxX - size.width - 24,
+        y: screen.visibleFrame.minY + 24
+      )
+    )
+  }
+
+  private func refresh() {
+    let home = CGPoint(x: panel.frame.midX, y: panel.frame.midY)
+    let gaze = CreatureInputs.gaze(cursor: NSEvent.mouseLocation, from: home, reach: Self.gazeReach)
+
+    var current = inputs
+    current.gazeX = gaze.x
+    current.gazeY = gaze.y
+
+    view.pose = .from(current)
+    // Clicks land on the creature; everywhere else they pass through to your work.
+    view.opaqueRegion = view.bounds.insetBy(dx: view.bounds.width * 0.12, dy: view.bounds.height * 0.12)
+  }
+
+  private func startAnimating() {
+    link?.invalidate()
+    let link = view.displayLink(target: self, selector: #selector(tick))
+    link.add(to: .main, forMode: .common)
+    self.link = link
+  }
+
+  @objc private func tick() {
+    // Asleep or hidden behind something is genuinely zero work — no frames, no gaze polling.
+    guard inputs.state != 0, panel.occlusionState.contains(.visible) else { return }
+    breath += 0.045
+    view.breath = breath
+    refresh()
+  }
+}
