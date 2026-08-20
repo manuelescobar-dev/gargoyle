@@ -36,3 +36,37 @@ Confirmed: `RiveView` inherits from `NSView` on macOS — real AppKit, not Catal
 
 An elaborate animated body — Live2D, a real sprite rig. The escape hatch is a `WKWebView` hosting
 *just* the creature inside the native panel. Native shell, web canvas. Deferrable.
+
+---
+
+## Revised 2026-08-20 — the first creature is drawn in code, not Rive
+
+**Rive was chosen before the ember mechanic existed.** Once we settled on *one arm per
+agent, one extending when blocked, posture reflecting load*, the shape of the problem
+changed: that's a function of two numbers, not a set of authored poses.
+
+Keyframing it means hand-authoring every arm at every load count and blending between
+them. Computing it means eight bezier curves derived from `load` and `blocked`, with every
+intermediate state free. The argument for Rive — *the state machine is the artifact* —
+carries much less weight when the interesting behaviour is arithmetic.
+
+An octopus is also unusually cheap to draw procedurally: a mantle, eight curves, an eye.
+No mesh deformation, which was Rive's strongest card.
+
+### What this does not change
+
+`CreatureInputs` is still the seam, and a code-drawn creature consumes exactly the inputs a
+`.riv` would. **Creature #1 is native; creatures #2+ can still be `.riv` files**, fed
+identically. The roster survives — we keep the option without depending on it.
+
+### What it costs
+
+Authoring-without-code, for the first creature only. Someone adding a second creature still
+won't touch Swift. And a binary `.riv` is opaque in git, where a drawn creature is
+reviewable and diffable.
+
+### What would change it back
+
+A creature that genuinely needs painterly rigging or mesh deformation. At 48px in
+peripheral vision that range is wasted — which was the argument for Rive's *weakness* not
+mattering, and cuts equally against needing its strength.
