@@ -1,7 +1,7 @@
 import { createServer, type Server } from "node:http";
-import { fromClaudeHook } from "./events.ts";
-import { Sessions } from "./sessions.ts";
-import { snapshot } from "./state.ts";
+import { fromClaudeHook } from "./sources/claude-code.ts";
+import { Sessions } from "./domain/sessions.ts";
+import { snapshot } from "./domain/state.ts";
 
 export const PORT = 7373;
 

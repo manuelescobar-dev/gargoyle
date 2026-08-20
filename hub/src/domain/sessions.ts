@@ -1,5 +1,5 @@
 import { basename } from "node:path";
-import type { Event } from "./events.ts";
+import type { Event } from "./event.ts";
 
 export type Status = "running" | "blocked" | "done";
 

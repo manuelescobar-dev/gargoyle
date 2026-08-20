@@ -1,21 +1,9 @@
+import type { Event, EventType } from "../domain/event.ts";
+
 /**
- * Claude Code sends a hook payload on stdin; a one-line curl forwards it here.
- * This turns that vendor shape into the one event shape the rest of the hub speaks.
- *
- * Every source normalizes to this. An iOS Shortcut, a cron job, and a coding agent
- * all arrive as the same thing, which is what keeps sources from leaking into the
- * state machine.
+ * Claude Code sends a hook payload on stdin; a one-line curl forwards it to POST /event.
+ * This is the only file in the hub that knows Claude Code exists.
  */
-export type Event = {
-  source: string;
-  sessionId: string;
-  cwd: string;
-  type: EventType;
-  ts: number;
-};
-
-export type EventType = "started" | "active" | "blocked" | "finished" | "ended";
-
 /** Claude Code's `hook_event_name` → what it means to us. */
 const HOOK_TYPES: Record<string, EventType> = {
   SessionStart: "started",

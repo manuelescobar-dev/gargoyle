@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { fromClaudeHook } from "../src/events.ts";
+import { fromClaudeHook } from "../../src/sources/claude-code.ts";
 
 test("a real hook payload normalizes", () => {
   const e = fromClaudeHook(

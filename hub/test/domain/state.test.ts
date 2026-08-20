@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { fromClaudeHook } from "../src/events.ts";
-import { DONE_TTL_MS, Sessions } from "../src/sessions.ts";
-import { snapshot } from "../src/state.ts";
+import { fromClaudeHook } from "../../src/sources/claude-code.ts";
+import { DONE_TTL_MS, Sessions } from "../../src/domain/sessions.ts";
+import { snapshot } from "../../src/domain/state.ts";
 
 /** Builds a Claude Code hook payload the way the real hook sends it. */
 const hook = (name: string, id: string, cwd = "/w/api-refactor") => ({
