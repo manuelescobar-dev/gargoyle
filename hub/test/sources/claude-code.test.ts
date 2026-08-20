@@ -4,7 +4,7 @@ import { fromClaudeHook } from "../../src/sources/claude-code.ts";
 
 test("a real hook payload normalizes", () => {
   const e = fromClaudeHook(
-    { hook_event_name: "Notification", session_id: "abc", cwd: "/w/x" },
+    { hook_event_name: "PermissionRequest", session_id: "abc", cwd: "/w/x" },
     1234,
   );
   assert.deepEqual(e, {

@@ -1,7 +1,7 @@
 import { basename } from "node:path";
 import type { Event } from "./event.ts";
 
-export type Status = "running" | "blocked" | "done";
+export type Status = "running" | "blocked" | "done" | "failed";
 
 export type Session = {
   id: string;
@@ -15,9 +15,9 @@ export type Session = {
 export const DONE_TTL_MS = 20_000;
 
 /**
- * NOTE: there is no "failed" status yet. Claude Code's Stop hook doesn't say whether
- * the run succeeded, so we'd be guessing. Detecting it means reading the transcript,
- * which is M1 work — better to show three honest statuses than four with one invented.
+ * `failed` comes from Claude Code's StopFailure hook, which fires when a turn ends on
+ * an API error. A *tool* failing is not a failed session — a red test suite is routine
+ * agent work, and calling it failure would be the creature lying.
  */
 export class Sessions {
   private byId = new Map<string, Session>();
@@ -29,7 +29,13 @@ export class Sessions {
     }
 
     const status: Status =
-      e.type === "blocked" ? "blocked" : e.type === "finished" ? "done" : "running";
+      e.type === "blocked"
+        ? "blocked"
+        : e.type === "failed"
+          ? "failed"
+          : e.type === "finished"
+            ? "done"
+            : "running";
 
     const existing = this.byId.get(e.sessionId);
     this.byId.set(e.sessionId, {
@@ -46,7 +52,8 @@ export class Sessions {
   /** Drops finished sessions once they've had their moment. */
   prune(now = Date.now()): void {
     for (const [id, s] of this.byId) {
-      if (s.status === "done" && now - s.since > DONE_TTL_MS) this.byId.delete(id);
+      const transient = s.status === "done" || s.status === "failed";
+      if (transient && now - s.since > DONE_TTL_MS) this.byId.delete(id);
     }
   }
 

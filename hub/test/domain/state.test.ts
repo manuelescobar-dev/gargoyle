@@ -34,7 +34,7 @@ test("one blocked session outranks any number of running ones", () => {
     hook("SessionStart", "a"),
     hook("SessionStart", "b"),
     hook("SessionStart", "c"),
-    hook("Notification", "d"),
+    hook("PermissionRequest", "d"),
   );
   const snap = snapshot(s.list());
   assert.equal(snap.state, "needs-you", "blocked must win — its cost grows while you don't look");
@@ -43,7 +43,7 @@ test("one blocked session outranks any number of running ones", () => {
 });
 
 test("a session that unblocks goes back to working", () => {
-  const s = feed(new Sessions(), hook("Notification", "a"), hook("PreToolUse", "a"));
+  const s = feed(new Sessions(), hook("PermissionRequest", "a"), hook("PreToolUse", "a"));
   assert.equal(snapshot(s.list()).state, "working");
 });
 

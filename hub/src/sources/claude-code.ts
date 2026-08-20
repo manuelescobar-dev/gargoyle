@@ -7,12 +7,24 @@ import type { Event, EventType } from "../domain/event.ts";
 /** Claude Code's `hook_event_name` → what it means to us. */
 const HOOK_TYPES: Record<string, EventType> = {
   SessionStart: "started",
+
+  // Routine progress. PostToolUseFailure is here on purpose: a failing test suite or a
+  // grep that finds nothing is normal agent work, not a failed session.
   PreToolUse: "active",
   PostToolUse: "active",
+  PostToolUseFailure: "active",
   UserPromptSubmit: "active",
-  Notification: "blocked", // fires when it needs permission or is idle-waiting
-  Stop: "finished",
+  SubagentStart: "active",
   SubagentStop: "active", // a subagent finished; the session itself is still going
+  PermissionDenied: "active", // you answered, it moves on
+
+  // The precise "waiting on a human" signal. Notification is deliberately absent —
+  // it also fires for auth_success and agent_completed, and the installer narrows it
+  // by matcher rather than the parser assuming.
+  PermissionRequest: "blocked",
+
+  StopFailure: "failed", // the turn ended on an API error
+  Stop: "finished",
   SessionEnd: "ended",
 };
 

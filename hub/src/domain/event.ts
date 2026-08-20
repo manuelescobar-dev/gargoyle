@@ -13,4 +13,4 @@ export type Event = {
   ts: number;
 };
 
-export type EventType = "started" | "active" | "blocked" | "finished" | "ended";
+export type EventType = "started" | "active" | "blocked" | "finished" | "failed" | "ended";

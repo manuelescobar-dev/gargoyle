@@ -41,12 +41,14 @@ export function snapshot(sessions: Session[]): Snapshot {
   const blocked = embers.filter((e) => e.status === "blocked").length;
   const running = embers.filter((e) => e.status === "running").length;
   const done = embers.filter((e) => e.status === "done").length;
+  const failed = embers.filter((e) => e.status === "failed").length;
 
   // Order matters: anything blocked outranks everything, because it's the only
   // state where the cost of you not noticing keeps growing.
   let state: CreatureState = "idle";
   if (blocked > 0) state = "needs-you";
   else if (running > 0) state = "working";
+  else if (failed > 0) state = "failed";
   else if (done > 0) state = "done";
 
   return {

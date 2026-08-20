@@ -13,9 +13,31 @@ export const GARGOYLE_MARKER = "# gargoyle";
 
 export const HUB_PORT = 7373;
 
-/** The hooks worth listening to. SessionEnd matters as much as the rest — it's how a
- *  session leaves the registry instead of lingering as a ghost ember. */
-export const HOOK_EVENTS = ["SessionStart", "Notification", "Stop", "SubagentStop", "SessionEnd"];
+/**
+ * The hooks worth listening to.
+ *
+ * `Notification` carries a matcher because it also fires for `auth_success` and
+ * `agent_completed` — without narrowing it, a successful login would make the
+ * creature ask for your attention. `PermissionRequest` is the precise signal;
+ * the notification matchers cover idle-waiting, which the parser can't see.
+ *
+ * SessionEnd matters as much as the rest — it's how a session leaves the registry
+ * instead of lingering as a ghost ember.
+ */
+export const HOOK_EVENTS = [
+  "SessionStart",
+  "PermissionRequest",
+  "PermissionDenied",
+  "Stop",
+  "StopFailure",
+  "SubagentStop",
+  "SessionEnd",
+] as const;
+
+/** Events we only want some of. The value is the settings.json `matcher`. */
+export const NARROWED_EVENTS: Record<string, string> = {
+  Notification: "idle_prompt|agent_needs_input",
+};
 
 type HookEntry = { type: string; command: string };
 type HookGroup = { matcher?: string; hooks: HookEntry[] };
@@ -38,7 +60,12 @@ export function withGargoyleHooks(input: Settings, port = HUB_PORT) {
   const added: string[] = [];
   const alreadyPresent: string[] = [];
 
-  for (const event of HOOK_EVENTS) {
+  const wanted: [string, string | undefined][] = [
+    ...HOOK_EVENTS.map((e) => [e, undefined] as [string, undefined]),
+    ...Object.entries(NARROWED_EVENTS),
+  ];
+
+  for (const [event, matcher] of wanted) {
     const existing = groupsFor(settings, event);
 
     if (existing.some((group) => (group.hooks ?? []).some(isOurs))) {
@@ -48,7 +75,10 @@ export function withGargoyleHooks(input: Settings, port = HUB_PORT) {
     }
 
     // Appended, never substituted. Someone else's hooks are none of our business.
-    hooks[event] = [...existing, { hooks: [{ type: "command", command: commandFor(port) }] }];
+    const group: HookGroup = { hooks: [{ type: "command", command: commandFor(port) }] };
+    if (matcher) group.matcher = matcher;
+
+    hooks[event] = [...existing, group];
     added.push(event);
   }
 
