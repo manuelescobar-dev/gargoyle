@@ -12,6 +12,11 @@ export const PORT = 7373;
  * No framework. It's two routes.
  */
 export function createHub(sessions = new Sessions()) {
+  // `doctor` needs to distinguish "wired up correctly" from "wired up and never fired",
+  // which is the failure that otherwise looks exactly like everything being fine.
+  const startedAt = Date.now();
+  let eventsReceived = 0;
+
   const server: Server = createServer((req, res) => {
     if (req.method === "POST" && req.url === "/event") {
       let body = "";
@@ -23,7 +28,10 @@ export function createHub(sessions = new Sessions()) {
         // machine is feeding this endpoint.
         try {
           const event = fromClaudeHook(JSON.parse(body));
-          if (event) sessions.apply(event);
+          if (event) {
+            sessions.apply(event);
+            eventsReceived++;
+          }
         } catch {
           // ignored on purpose: unparseable input is the sender's problem
         }
@@ -39,8 +47,14 @@ export function createHub(sessions = new Sessions()) {
       return;
     }
 
+    if (req.method === "GET" && req.url === "/health") {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ uptimeMs: Date.now() - startedAt, eventsReceived }));
+      return;
+    }
+
     res.writeHead(404).end();
   });
 
-  return { server, sessions };
+  return { server, sessions, health: () => ({ eventsReceived }) };
 }

@@ -47,9 +47,45 @@ to catch.
 **It works both ways.** Every pet in this genre is output-only. Click this one and act: focus the waiting
 terminal, approve the prompt, open a worktree.
 
+## Quickstart
+
+Requires [Node 24+](https://nodejs.org) and macOS 14+.
+
+```bash
+git clone https://github.com/manuelescobar-dev/gargoyle
+cd gargoyle/hub && npm install
+node src/cli.ts install
+```
+
+That wires Claude Code's hooks to the hub and sets the hub to start at login. It appends
+to your hooks rather than replacing them, backs up `settings.json` first, and is safe to
+run twice.
+
+Then start the surface:
+
+```bash
+cd ../pet && swift run Gargoyle
+```
+
+Check it's actually working — the useful part is that it can tell "wired up" from
+"wired up and never fired":
+
+```bash
+cd ../hub && node src/cli.ts doctor
+```
+
+To disconnect completely:
+
+```bash
+node src/cli.ts uninstall
+```
+
+Your own hooks and settings are left exactly as they were.
+
 ## Status
 
-Design phase. The story and the principles are written; nothing is built yet.
+M0. The hub reads Claude Code's hooks and a menu bar item shows what needs you.
+The creature itself is M1.
 
 ## Docs
 

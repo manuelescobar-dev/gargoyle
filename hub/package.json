@@ -9,9 +9,13 @@
   "scripts": {
     "start": "node src/index.ts",
     "test": "node --test \"test/**/*.test.ts\"",
-    "check": "biome check --write ."
+    "check": "biome check --write .",
+    "doctor": "node src/cli.ts doctor"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0"
+  },
+  "bin": {
+    "gargoyle": "src/cli.ts"
   }
 }
