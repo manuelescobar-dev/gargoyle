@@ -1,0 +1,10 @@
+{
+  "state": "needs-you",
+  "embers": [
+    { "id": "s1", "label": "api-refactor", "status": "running" },
+    { "id": "s2", "label": "gargoyle", "status": "running" },
+    { "id": "s3", "label": "billing-fix", "status": "blocked" }
+  ],
+  "mood": 0.5,
+  "blocked": 1
+}

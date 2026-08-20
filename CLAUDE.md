@@ -45,11 +45,17 @@ Coverage is proportional to risk, not to a percentage. Full reasoning in
 ## Commands
 
 ```bash
-cd hub
-npm test          # node --test, 18 tests
-npm run check     # biome, formats and lints
-npm start         # hub on 127.0.0.1:7373
+cd hub && npm test        # 19 tests
+cd hub && npm run check   # biome, formats and lints
+cd hub && npm start       # hub on 127.0.0.1:7373
+
+cd pet && swift test      # 16 tests
+cd pet && swift run Gargoyle
 ```
+
+Both suites assert against `protocol/fixtures/state.json` — the hub that it still
+produces that shape, the pet that it still decodes it. Change the protocol and you
+change that file, or one side goes quiet without failing.
 
 ## Layout
 
@@ -57,6 +63,9 @@ npm start         # hub on 127.0.0.1:7373
 hub/src/domain/    what the creature shows. knows nothing about sources or transport
 hub/src/sources/   vendor payload → domain Event. the only place Claude Code is named
 hub/src/server.ts  HTTP boundary
+pet/…/Domain/      Snapshot, MenuBarPresentation. pure — no AppKit, no URLSession
+pet/…/Transport/   HubClient. URLSession only
+pet/…/UI/          AppKit only. decides nothing
 creatures/         one folder per creature: a .riv and a persona.md
 protocol/          the hub↔pet wire format
 decisions/         why things are the way they are
