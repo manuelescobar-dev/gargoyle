@@ -108,13 +108,17 @@ This is the part the genre is missing. Everything else is a face on a progress b
 
 ### The quieter half
 
-It also looks after you a little.
+It's also where everything else you care about can surface.
 
-Not with reminders that fire on a timer and pile up unread — with a question asked at a moment you're already
-looking at it. You came back from lunch and glanced over; it wonders what you ate. You've been at it four
-hours; it stretches. Something you asked it to watch has changed.
+Anything that can produce a line of JSON becomes an ember or a question — a build, a deploy, a message that
+actually matters, a script you wrote on a Tuesday afternoon. Gargoyle doesn't know what any of them are. It
+knows something wants a moment of your attention, and it knows how to spend that well.
 
-Every one of those waits for a natural glance instead of taking one. A nudge becoming *ready* and a nudge
+So the shape of it is yours. Someone points it at their CI. Someone wires up their gym log. Someone has it
+ask, at four in the afternoon, whether they've stood up lately. Gargoyle ships none of those — it ships the
+part that's actually hard, which is asking at a moment you don't mind being asked.
+
+Every one of them waits for a natural glance instead of taking one. A nudge becoming *ready* and a nudge
 becoming *visible* are two different events, and keeping them separate is the difference between a companion
 and a notification.
 

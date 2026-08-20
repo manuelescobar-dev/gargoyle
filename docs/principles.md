@@ -58,6 +58,20 @@ the same bar.
 Taste here is restraint more than decoration: knowing what to leave out, getting the spacing right, picking
 one good color instead of five. Nothing ships half-designed. If a piece isn't good yet, it waits.
 
+### A surface, not a suite
+
+Gargoyle ships one opinion: **how a thing on your screen should ask for your attention.** The creature, the
+embers, the ladder, the queue, the popover. That's the product.
+
+It ships no verticals. No food tracking, no stock widget, no habit anything. Anything that can produce a line
+of JSON becomes a source — a shell script, a cron job, a Shortcut, another app. The hub never learns what a
+stock is; it learns that a command produced something worth a glance.
+
+The one exception is Claude Code, built in because it needs depth a generic endpoint can't give: reading hook
+payloads, mapping sessions to worktrees, answering a blocked permission prompt.
+
+This is the principle that says no to almost every feature request. That's its job.
+
 ### Boring code, interesting creature
 
 All the surprise lives in the personality. None of it lives in the architecture.
@@ -135,6 +149,17 @@ Anyone can add a creature. Nobody redefines what a state means.
 
 The roster only works because `needs-you` means the same thing on every creature. That shared meaning is the
 language your eye learns without noticing, and it's the one thing a new creature must not break.
+
+### Personality is voice, not volume
+
+The creature has a name, a temperament, and moods that hold across a day. None of it ever creates a reason to
+speak.
+
+Personality shapes *how* something already worth saying gets said — the same permission prompt, in its voice,
+with an opinion about this being the third time. It never adds a message that wouldn't otherwise exist.
+
+The line is who started it. Charm when you've opened the popover and there's nothing to report is free; you're
+already there. Charm that interrupts you is Clippy, and Clippy is the reason this project has a manner at all.
 
 ### Craft
 
