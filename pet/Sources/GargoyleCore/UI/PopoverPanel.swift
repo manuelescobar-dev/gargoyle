@@ -33,9 +33,11 @@ public final class PopoverPanel: NSPanel {
     summary: String,
     menu: Menu,
     request: (id: String, summary: String)?,
+    nudge: (id: String, text: String, replyable: Bool)?,
     near creature: NSRect,
     onChoose: @escaping (String) -> Void,
-    onDecide: @escaping (String, Bool) -> Void
+    onDecide: @escaping (String, Bool) -> Void,
+    onReply: @escaping (String, String) -> Void
   ) {
     self.onChoose = onChoose
 
@@ -43,12 +45,17 @@ public final class PopoverPanel: NSPanel {
       summary: summary,
       items: menu.items,
       request: request.map { PopoverContent.Request(id: $0.id, summary: $0.summary) },
+      nudge: nudge.flatMap { $0.replyable ? PopoverContent.Nudge(id: $0.id, text: $0.text) : nil },
       choose: { [weak self] id in
         self?.onChoose(id)
         self?.hide()
       },
       decide: { [weak self] id, approved in
         onDecide(id, approved)
+        self?.hide()
+      },
+      reply: { [weak self] id, text in
+        onReply(id, text)
         self?.hide()
       }
     )
@@ -94,16 +101,23 @@ public final class PopoverPanel: NSPanel {
 
 struct PopoverContent: View {
   struct Request { let id: String; let summary: String }
+  struct Nudge { let id: String; let text: String }
 
   let summary: String
   let items: [Menu.Item]
   let request: Request?
+  let nudge: Nudge?
   let choose: (String) -> Void
   let decide: (String, Bool) -> Void
+  let reply: (String, String) -> Void
+
+  @State private var answer = ""
+  @FocusState private var answerFocused: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       if let request { permission(request) }
+      if let nudge { asking(nudge) }
 
       Text(summary)
         .font(.system(size: 12, weight: .medium))
@@ -141,6 +155,34 @@ struct PopoverContent: View {
     }
     .frame(width: 260)
     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+  }
+
+  /// A question from one of your own sources, in its words. The field is the whole point:
+  /// a question you can't answer is just a notification, which is the thing we aren't building.
+  @ViewBuilder
+  private func asking(_ nudge: Nudge) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text(nudge.text)
+        .font(.system(size: 13, weight: .medium))
+        .lineLimit(3)
+        .fixedSize(horizontal: false, vertical: true)
+
+      TextField("", text: $answer, prompt: Text("…"))
+        .textFieldStyle(.roundedBorder)
+        .font(.system(size: 12))
+        .focused($answerFocused)
+        .onSubmit {
+          let trimmed = answer.trimmingCharacters(in: .whitespacesAndNewlines)
+          guard !trimmed.isEmpty else { return }
+          reply(nudge.id, trimmed)
+        }
+    }
+    .padding(.horizontal, 14)
+    .padding(.top, 12)
+    .padding(.bottom, 10)
+    .onAppear { answerFocused = true }
+
+    Divider().padding(.horizontal, 10)
   }
 
   /// Sits at the top because it's the only thing here with a clock running on it — the hub

@@ -29,8 +29,18 @@ let connection = HubConnection(
   // The hub decided which terminal; raising it has to happen here, because only a real
   // app can be granted Automation permission.
   onFocus: { app, term in TerminalFocus.raise(app: app, term: term) },
-  onRequest: { request in creature.awaiting(request) }
+  onRequest: { request in creature.awaiting(request) },
+  onNudge: { nudge in creature.asked(nudge) }
 )
+
+// Your answer goes wherever the source said it should. Gargoyle stores nothing itself.
+creature.onReply = { id, text in
+  Task {
+    let escaped = text.replacingOccurrences(of: "\\", with: "\\\\")
+      .replacingOccurrences(of: "\"", with: "\\\"")
+    await post("/reply", #"{"id":"\#(id)","text":"\#(escaped)"}"#)
+  }
+}
 
 // Actions go straight back to the hub — the pet doesn't know what "focus:s3" means,
 // and that's deliberate.

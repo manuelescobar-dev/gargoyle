@@ -22,6 +22,10 @@ export type HubHandlers = {
   onDecision?: (id: string, decision: "allow" | "deny") => void;
   /// The pet reporting what it can see of the desktop. Data, not decisions.
   onContext?: (context: { currentSession?: string }) => void;
+  /// Something worth asking, queued until asking is free.
+  onNudge?: (nudge: { text: string; replyTo?: string; expiresInMs?: number }) => void;
+  /// Your answer to a nudge, on its way to wherever you said it should go.
+  onReply?: (id: string, text: string) => void;
 };
 
 /** Collects a request body, then hands it over. */
@@ -119,6 +123,38 @@ export function createHub(options: HubHandlers = {}) {
           if (typeof id === "string" && (decision === "allow" || decision === "deny")) {
             options.onDecision?.(id, decision);
           }
+        } catch {
+          // the sender's problem, not ours
+        }
+        done(204);
+      });
+      return;
+    }
+
+    if (req.method === "POST" && req.url === "/nudge") {
+      void readBody(req).then((body) => {
+        try {
+          const { text, reply_to, replyTo, expires_in_ms } = JSON.parse(body);
+          if (typeof text === "string" && text.trim().length > 0) {
+            options.onNudge?.({
+              text: text.slice(0, 280),
+              replyTo: typeof (reply_to ?? replyTo) === "string" ? (reply_to ?? replyTo) : undefined,
+              expiresInMs: typeof expires_in_ms === "number" ? expires_in_ms : undefined,
+            });
+          }
+        } catch {
+          // the sender's problem, not ours
+        }
+        done(204);
+      });
+      return;
+    }
+
+    if (req.method === "POST" && req.url === "/reply") {
+      void readBody(req).then((body) => {
+        try {
+          const { id, text } = JSON.parse(body);
+          if (typeof id === "string" && typeof text === "string") options.onReply?.(id, text);
         } catch {
           // the sender's problem, not ours
         }

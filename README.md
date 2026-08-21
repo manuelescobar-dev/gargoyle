@@ -88,6 +88,20 @@ curl -X POST localhost:7373/event -d '{"id":"ci","status":"done"}'
 arm exactly like a blocked agent does. No SDK, no plugin API — a shell script, a cron job,
 an iOS Shortcut and another app all arrive the same way.
 
+## And anything can ask you something
+
+```bash
+curl -X POST localhost:7373/nudge \
+  -d '{"text":"what did you eat?","reply_to":"~/bin/log-food"}'
+```
+
+The creature asks **when you're already looking at it** — you clicked it, a run just
+finished, you came back to a terminal — never when a timer fires. Your answer goes to the
+command you named. Gargoyle stores nothing itself.
+
+That's the whole of it: Gargoyle ships the part that's hard, which is asking at a moment
+you don't mind being asked.
+
 To disconnect completely:
 
 ```bash

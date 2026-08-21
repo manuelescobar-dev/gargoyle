@@ -1,5 +1,7 @@
 import { PendingDecisions } from "./domain/decisions.ts";
 import { menuFor } from "./domain/menu.ts";
+import { NudgeQueue, type Nudge } from "./domain/nudges.ts";
+import { deliverReply } from "./actions/reply.ts";
 import { Sessions } from "./domain/sessions.ts";
 import type { Snapshot } from "./domain/state.ts";
 import { situationFor } from "./domain/voice.ts";
@@ -22,6 +24,25 @@ let previous: Snapshot | null = null;
 let nextRequestId = 0;
 /// What the pet last reported about your desktop. It observes; the hub decides.
 let context: { currentSession?: string } = {};
+
+const nudges = new NudgeQueue();
+/// Nudges we've asked but not yet heard back on, so a reply knows where to go.
+const asked = new Map<string, Nudge>();
+let nextNudgeId = 0;
+
+/**
+ * Surfaces a queued nudge, but only at a moment you're already looking and nothing more
+ * urgent is happening. Asking is free then; interrupting is not.
+ */
+function maybeNudge(moment: string) {
+  const busy = previous?.state === "needs-you";
+  const nudge = nudges.takeFor(moment, Date.now(), { busy });
+  if (!nudge) return;
+
+  const id = `n${++nextNudgeId}`;
+  asked.set(id, nudge);
+  socket?.say(id, nudge.text, nudge.replyTo !== undefined);
+}
 
 /** What the popover shows. Falls back to the worktree when the payload tells us nothing. */
 function describe(payload: Record<string, unknown>, fallback: string): string {
@@ -46,10 +67,19 @@ const { server } = createHub({
     // Speaks rarely, and only about things its body doesn't already show.
     const situation = situationFor(previous, snapshot);
     if (situation) socket?.speak(situation);
+
+    const wasRunning = previous?.state === "working" || previous?.state === "needs-you";
     previous = snapshot;
+
+    // A run finishing is a moment you look over anyway.
+    if (wasRunning && (snapshot.state === "idle" || snapshot.state === "done")) {
+      maybeNudge("finished");
+    }
   },
 
   onAction: (id) => {
+    // Opening the popover is the most reliable glance there is.
+    if (id === "opened") return maybeNudge("clicked");
     if (!id.startsWith("focus:")) return;
 
     const session = sessions.find(id.slice("focus:".length));
@@ -84,6 +114,14 @@ const { server } = createHub({
 
   onDecision: (id, decision) => pending.answer(id, decision),
 
+  onNudge: (nudge) => nudges.add(nudge),
+
+  onReply: (id, text) => {
+    const nudge = asked.get(id);
+    asked.delete(id);
+    if (nudge?.replyTo) deliverReply(nudge.replyTo, text);
+  },
+
   onContext: (reported) => {
     // The pet reports a *terminal* id; the menu ranks by *session*. Only the hub knows
     // which agent is running in which terminal, so the bridge belongs here.
@@ -92,6 +130,8 @@ const { server } = createHub({
       ? sessions.list().find((s) => s.terminal?.term?.endsWith(terminalId))
       : undefined;
     context = { currentSession: match?.id };
+    // Coming back to a terminal is a glance.
+    maybeNudge("returned");
     // Recompute now rather than waiting for the next agent event — you may have switched
     // windows precisely because you're about to open the menu.
     if (previous) socket?.sendMenu(menuFor(previous, { now: Date.now(), ...context }));

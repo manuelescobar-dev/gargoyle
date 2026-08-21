@@ -21,7 +21,13 @@ public struct HubState: Sendable {
     let term: String?
     let id: String?
     let summary: String?
+    let text: String?
+    let replyable: Bool?
   }
+
+  /// A question from a source, in that source's own words. Kept separate from `situation`
+  /// because someone else's question must not come out in the creature's voice.
+  public private(set) var pendingNudge: (id: String, text: String, replyable: Bool)?
 
   /// A tool call waiting on you. Cleared when the hub withdraws it or the socket drops —
   /// answering a question nobody is waiting on any more would do nothing.
@@ -42,7 +48,11 @@ public struct HubState: Sendable {
     let tagged = try? JSONDecoder().decode(Tagged.self, from: data)
 
     if tagged?.t == "bubble" {
-      situation = tagged?.situation
+      if let text = tagged?.text, let id = tagged?.id {
+        pendingNudge = (id, text, tagged?.replyable ?? false)
+      } else {
+        situation = tagged?.situation
+      }
       return false  // nothing about the world changed
     }
 
@@ -78,6 +88,11 @@ public struct HubState: Sendable {
     latest = nil
     menu = .empty
     pendingRequest = nil
+    pendingNudge = nil
+  }
+
+  public mutating func clearNudge() {
+    pendingNudge = nil
   }
 
   /// Hands over a pending situation exactly once — otherwise the creature would repeat

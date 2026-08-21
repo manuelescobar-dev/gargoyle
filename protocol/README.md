@@ -61,11 +61,15 @@ left unanswered costs nothing.
 The hub decides which; only the pet can perform it, because macOS won't grant Automation
 rights to a launchd agent — [decisions/0007](../decisions/0007-who-can-ask-for-permission.md).
 
-### `bubble` — a queued nudge, released on a natural glance
+### `bubble` — the creature says something
 
 ```jsonc
-{ "t": "bubble", "text": "this one's been waiting.", "ttl": 30 }
+{ "t": "bubble", "situation": "failed" }                                  // its own voice
+{ "t": "bubble", "id": "n1", "text": "what did you eat?", "replyable": true }  // someone else's
 ```
+
+A `situation` goes through the creature's persona. A `text` does not — someone else's
+question shouldn't come out in the creature's voice.
 
 ## Pet → Hub
 
@@ -107,6 +111,7 @@ The pet answers over HTTP rather than the socket, because these are requests wit
 POST /action     {"id": "focus:s3"}
 POST /decision   {"id": "r7", "decision": "allow" | "deny"}
 POST /context    {"currentSession": "<terminal id>" | null}
+POST /reply      {"id": "n1", "text": "chicken and rice"}
 ```
 
 ## Not on the wire yet

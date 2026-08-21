@@ -12,6 +12,9 @@ public final class CreatureController {
   /// Reports an answered permission request. `true` approves.
   public var onDecide: (String, Bool) -> Void = { _, _ in }
   private var request: (id: String, summary: String)?
+  private var nudge: (id: String, text: String, replyable: Bool)?
+  /// Reports an answered nudge.
+  public var onReply: (String, String) -> Void = { _, _ in }
   private let view: OctopusView
   private var inputs = CreatureInputs.from(nil)
   private var life = Liveliness()
@@ -50,6 +53,13 @@ public final class CreatureController {
     self.request = request
   }
 
+  /// A question from one of your sources. Shown in the bubble; answered in the popover.
+  public func asked(_ nudge: (id: String, text: String, replyable: Bool)?) {
+    self.nudge = nudge
+    view.speech = nudge?.text
+    if nudge != nil { speechUntil = clock + Self.speechDuration * 2 }
+  }
+
   public func apply(_ snapshot: Snapshot?, menu: Menu = .empty) {
     inputs = CreatureInputs.from(snapshot)
     self.menu = menu
@@ -62,15 +72,25 @@ public final class CreatureController {
       popover.hide()
       return
     }
+    // Opening the popover is the most reliable glance there is — the hub may have
+    // something queued that it's been holding for exactly this moment.
+    onAction("opened")
+
     popover.show(
       summary: summary,
       menu: menu,
       request: request,
+      nudge: nudge,
       near: panel.frame,
       onChoose: { [weak self] id in self?.onAction(id) },
       onDecide: { [weak self] id, approved in
         self?.request = nil
         self?.onDecide(id, approved)
+      },
+      onReply: { [weak self] id, text in
+        self?.nudge = nil
+        self?.view.speech = nil
+        self?.onReply(id, text)
       }
     )
   }

@@ -48,6 +48,10 @@ export function attachWebSocket(
     /// A situation key, not words. The creature's persona decides what that sounds like,
     /// so swapping the creature swaps the voice.
     speak: (situation: string) => sendAll(JSON.stringify({ t: "bubble", situation })),
+    /// A nudge, in words the source chose. Unlike `speak`, the creature's persona has no
+    /// say here — someone else's question shouldn't come out in its voice.
+    say: (id: string, text: string, replyable: boolean) =>
+      sendAll(JSON.stringify({ t: "bubble", id, text, replyable })),
     /// Puts a permission question in front of the user.
     ask: (id: string, summary: string) => sendAll(JSON.stringify({ t: "request", id, summary })),
     /// Takes the question away again — answered, or nobody answered in time.

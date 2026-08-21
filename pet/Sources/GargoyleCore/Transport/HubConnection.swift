@@ -12,6 +12,7 @@ public final class HubConnection {
   private let onMenu: (Menu) -> Void
   private let onFocus: (String?, String?) -> Void
   private let onRequest: ((id: String, summary: String)?) -> Void
+  private let onNudge: ((id: String, text: String, replyable: Bool)?) -> Void
   private var everConnected = false
   private var state = HubState()
   private var task: URLSessionWebSocketTask?
@@ -28,7 +29,8 @@ public final class HubConnection {
     onSay: @escaping (String) -> Void = { _ in },
     onMenu: @escaping (Menu) -> Void = { _ in },
     onFocus: @escaping (String?, String?) -> Void = { _, _ in },
-    onRequest: @escaping ((id: String, summary: String)?) -> Void = { _ in }
+    onRequest: @escaping ((id: String, summary: String)?) -> Void = { _ in },
+    onNudge: @escaping ((id: String, text: String, replyable: Bool)?) -> Void = { _ in }
   ) {
     url = URL(string: "ws://\(host):\(port)/socket")!
     self.onChange = onChange
@@ -36,6 +38,7 @@ public final class HubConnection {
     self.onMenu = onMenu
     self.onFocus = onFocus
     self.onRequest = onRequest
+    self.onNudge = onNudge
   }
 
   public func start() {
@@ -79,6 +82,7 @@ public final class HubConnection {
             self.onFocus(request.app, request.term)
           }
           self.onRequest(self.state.pendingRequest)
+          self.onNudge(self.state.pendingNudge)
 
           // Coming back after being away is the one moment it greets you unprompted.
           if !self.everConnected {
