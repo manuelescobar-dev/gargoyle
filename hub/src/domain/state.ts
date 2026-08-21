@@ -1,4 +1,4 @@
-import { levelFor, type Level, type Surroundings } from "./attention.ts";
+import { type Level, levelFor, type Surroundings } from "./attention.ts";
 import type { Session } from "./sessions.ts";
 
 /**

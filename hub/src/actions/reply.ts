@@ -13,5 +13,10 @@ export function deliverReply(command: string, answer: string): void {
   const child = execFile("/bin/sh", ["-c", command], { timeout: 10_000 }, (error) => {
     if (error) console.log(`reply: ${command} failed — ${error.message}`);
   });
+
+  // A command that exits before reading stdin closes the pipe under us, and the write
+  // lands as an unhandled EPIPE that takes the hub down with it. Found by CI on Linux;
+  // macOS was hiding it on timing. The command not wanting your answer is its business.
+  child.stdin?.on("error", () => {});
   child.stdin?.end(answer);
 }

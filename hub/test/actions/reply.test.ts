@@ -30,8 +30,15 @@ test("shell metacharacters in an answer stay data", async () => {
   rmSync(out, { force: true });
 });
 
-test("a command that fails doesn't take the hub down", async () => {
+// A command that exits before reading stdin closes the pipe. The write then lands as an
+// unhandled EPIPE, which took the whole hub down until CI on Linux caught it.
+test("a command that exits before reading stdin doesn't take the hub down", async () => {
   assert.doesNotThrow(() => deliverReply("exit 1", "anything"));
+  await settle();
+});
+
+test("a command that exits instantly while we write a lot doesn't either", async () => {
+  assert.doesNotThrow(() => deliverReply("exit 0", "x".repeat(200_000)));
   await settle();
 });
 

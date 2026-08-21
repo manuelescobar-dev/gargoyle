@@ -31,7 +31,7 @@ traffic at all. The pet renders this and keeps nothing.
   // `since` is absolute, not a duration — a duration would change every second and put
   // a frame on the wire each time, for a creature that hasn't moved.
   "blocked": 1,
-  "attention": "silent"     // silent | badge | bubble — the interruption ladder, on the wire
+  "attention": "silent"     // silent | badge | bubble | notify — the interruption ladder
 }
 ```
 

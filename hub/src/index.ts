@@ -81,7 +81,10 @@ const { server } = createHub({
     // Speaks rarely, and only about things its body doesn't already show.
     // A finished run is a moment you look over, so that's when its own voice is allowed.
     const situation = situationFor(previous, snapshot);
-    if (situation && levelFor({ kind: "voice", situation }, surroundings("finished")) === "bubble") {
+    if (
+      situation &&
+      levelFor({ kind: "voice", situation }, surroundings("finished")) === "bubble"
+    ) {
       socket?.speak(situation);
     }
 
