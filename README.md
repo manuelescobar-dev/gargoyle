@@ -125,3 +125,7 @@ the Rive editor ([#9](https://github.com/manuelescobar-dev/gargoyle/issues/9)).
 |---|---|
 | [The story](docs/story.md) | Where desktop creatures came from, the gap none of them fill, and what we're making |
 | [Principles](docs/principles.md) | The values the project lives by, and the rules that fall out of them |
+
+## License
+
+MIT — see [LICENSE](LICENSE).
