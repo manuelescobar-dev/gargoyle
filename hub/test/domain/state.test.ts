@@ -75,6 +75,12 @@ test("embers are labelled by worktree, which is how you think about them", () =>
   assert.equal(snapshot(s.list()).embers[0].label, "api-refactor");
 });
 
+test("a generic source keeps the name it gave itself", () => {
+  const s = new Sessions();
+  s.apply({ source: "ci", sessionId: "build", cwd: "", type: "active", ts: 1, label: "nightly build" });
+  assert.equal(s.list()[0].label, "nightly build");
+});
+
 test("a session remembers its terminal even when later events omit it", () => {
   const s = new Sessions();
   s.apply({

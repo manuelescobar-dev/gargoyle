@@ -5,19 +5,22 @@
       "id": "s1",
       "label": "api-refactor",
       "status": "running",
-      "since": 1
+      "since": 1,
+      "focusable": true
     },
     {
       "id": "s2",
       "label": "gargoyle",
       "status": "running",
-      "since": 2
+      "since": 2,
+      "focusable": true
     },
     {
       "id": "s3",
       "label": "billing-fix",
       "status": "blocked",
-      "since": 3
+      "since": 3,
+      "focusable": true
     }
   ],
   "mood": 0.5,

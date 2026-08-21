@@ -74,6 +74,20 @@ Check it's actually working — the useful part is that it can tell "wired up" f
 cd ../hub && node src/cli.ts doctor
 ```
 
+## Anything can be an ember
+
+Gargoyle ships the attention model and the Claude Code integration, and nothing else.
+Everything you care about gets in through one line:
+
+```bash
+curl -X POST localhost:7373/event -d '{"id":"ci","label":"nightly build","status":"running"}'
+curl -X POST localhost:7373/event -d '{"id":"ci","status":"done"}'
+```
+
+`running` · `blocked` · `done` · `failed` · `gone`. A blocked source raises the creature's
+arm exactly like a blocked agent does. No SDK, no plugin API — a shell script, a cron job,
+an iOS Shortcut and another app all arrive the same way.
+
 To disconnect completely:
 
 ```bash

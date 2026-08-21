@@ -4,9 +4,13 @@ import { menuFor } from "../../src/domain/menu.ts";
 import type { Snapshot } from "../../src/domain/state.ts";
 
 const now = 1_000_000;
-const ember = (id: string, label: string, status: Snapshot["embers"][0]["status"], sinceMs: number) => ({
-  id, label, status, since: now - sinceMs,
-});
+const ember = (
+  id: string,
+  label: string,
+  status: Snapshot["embers"][0]["status"],
+  sinceMs: number,
+  focusable = true,
+) => ({ id, label, status, since: now - sinceMs, focusable });
 const snap = (embers: Snapshot["embers"]): Snapshot => ({
   state: embers.some((e) => e.status === "blocked") ? "needs-you" : "working",
   embers,
@@ -76,4 +80,22 @@ test("a terminal id is matched to its session by suffix", () => {
   // `w12t0p0:UUID` from the shell, bare `UUID` from AppleScript — matching is by suffix.
   const items = menuFor(snap(embers), { now, currentSession: "s1" });
   assert.equal(items[items.length - 1].id, "focus:s1");
+});
+
+// Sources that aren't agents still show as embers — the creature holds them the same way —
+// but there's nowhere to jump to, and a row that does nothing is its own small lie.
+test("something with no terminal gets no jump row", () => {
+  const items = menuFor(
+    snap([
+      ember("ci", "nightly build", "running", 1_000, false),
+      ember("s1", "api-refactor", "running", 2_000),
+    ]),
+    { now },
+  );
+  assert.deepEqual(items.map((i) => i.id), ["focus:s1"]);
+});
+
+test("a blocked source with no terminal still doesn't get a row", () => {
+  const items = menuFor(snap([ember("ci", "build", "blocked", 90_000, false)]), { now });
+  assert.deepEqual(items, [], "it's on the creature, just not jumpable");
 });

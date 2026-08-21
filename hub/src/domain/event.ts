@@ -11,6 +11,10 @@ export type Event = {
   cwd: string;
   type: EventType;
   ts: number;
+  /// What to call this in the menu. Agents don't set it — their worktree is a better
+  /// name than anything they could invent — but a generic source has no cwd to fall
+  /// back on.
+  label?: string;
   /// Where this session is running, when the source can tell us.
   terminal?: Terminal;
 };

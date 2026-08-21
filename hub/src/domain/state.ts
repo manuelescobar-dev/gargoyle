@@ -22,6 +22,8 @@ export type Ember = {
   /// When this status began — an absolute time, so an unchanged snapshot stays unchanged
   /// and doesn't put a frame on the wire every second.
   since: number;
+  /// Whether there's somewhere to jump to. A CI job has no terminal.
+  focusable: boolean;
 };
 
 export type Snapshot = {
@@ -44,6 +46,7 @@ export function snapshot(sessions: Session[]): Snapshot {
     label: s.label,
     status: s.status,
     since: s.since,
+    focusable: s.terminal !== undefined,
   }));
 
   const blocked = embers.filter((e) => e.status === "blocked").length;

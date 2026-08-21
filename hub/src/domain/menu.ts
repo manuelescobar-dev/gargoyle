@@ -36,6 +36,9 @@ export function menuFor(snapshot: Snapshot, context: Context): Array<{ id: strin
   };
 
   return [...snapshot.embers]
+    // A CI job or a Shortcut has no terminal, so offering to jump there would be a row
+    // that does nothing — which is the same failure as a stale action, just quieter.
+    .filter((ember) => ember.focusable)
     .sort((a, b) => {
       const [groupA, tieA] = rank(a);
       const [groupB, tieB] = rank(b);

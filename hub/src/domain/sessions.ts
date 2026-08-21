@@ -6,7 +6,9 @@ export type Status = "running" | "blocked" | "done" | "failed";
 export type Session = {
   id: string;
   cwd: string;
-  label: string; // the worktree name — how you actually think about which agent this is
+  /// The worktree name for an agent — how you actually think about which is which — or
+  /// whatever a generic source called itself.
+  label: string;
   status: Status;
   since: number;
   /// Remembered from whichever event carried it — later events may not.
@@ -43,7 +45,7 @@ export class Sessions {
     this.byId.set(e.sessionId, {
       id: e.sessionId,
       cwd: e.cwd || existing?.cwd || "",
-      label: basename(e.cwd || existing?.cwd || "") || e.sessionId.slice(0, 6),
+      label: e.label ?? existing?.label ?? basename(e.cwd || "") ?? e.sessionId.slice(0, 6),
       status,
       // `since` tracks when this status began, so a session that stays blocked
       // keeps its original timestamp and we can tell how long you've been holding it up.

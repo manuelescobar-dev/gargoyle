@@ -2,6 +2,7 @@ import { createServer, type Server } from "node:http";
 import { Sessions } from "./domain/sessions.ts";
 import { snapshot } from "./domain/state.ts";
 import { fromClaudeHook } from "./sources/claude-code.ts";
+import { fromGeneric } from "./sources/generic.ts";
 
 export const PORT = 7373;
 
@@ -69,10 +70,13 @@ export function createHub(options: HubHandlers = {}) {
           };
 
           const payload = JSON.parse(body) as Record<string, unknown>;
-          const event = fromClaudeHook(payload, Date.now(), {
-            app: header("x-gargoyle-term-app"),
-            term: header("x-gargoyle-term"),
-          });
+          // Claude Code first, then anything else. Each reader refuses what isn't its
+          // own, so an event can never be claimed twice.
+          const event =
+            fromClaudeHook(payload, Date.now(), {
+              app: header("x-gargoyle-term-app"),
+              term: header("x-gargoyle-term"),
+            }) ?? fromGeneric(payload, Date.now());
 
           if (event) {
             sessions.apply(event);

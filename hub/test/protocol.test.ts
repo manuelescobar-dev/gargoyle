@@ -24,7 +24,15 @@ test("the hub still produces the shape the pet decodes", () => {
     ["s2", "/w/gargoyle", "started"],
     ["s3", "/w/billing-fix", "blocked"],
   ] as const) {
-    sessions.apply({ source: "claude-code", sessionId: id, cwd, type, ts: ++ts });
+    sessions.apply({
+      source: "claude-code",
+      sessionId: id,
+      cwd,
+      type,
+      ts: ++ts,
+      // Agents run in a terminal, which is what makes them jumpable.
+      terminal: { app: "iTerm.app", term: `w0t0p0:${id}` },
+    });
   }
 
   assert.deepEqual(snapshot(sessions.list()), fixture);
