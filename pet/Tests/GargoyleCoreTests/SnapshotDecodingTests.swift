@@ -18,6 +18,7 @@ func decodesFixture() throws {
   #expect(s.blocked == 1)
   #expect(s.embers.map(\.label) == ["api-refactor", "gargoyle", "billing-fix"])
   #expect(s.embers.last?.status == .blocked)
+  #expect(s.embers.first?.since != nil, "the surface needs this to rank by how long it's waited")
 }
 
 @Test("a state the pet has never heard of degrades instead of crashing")

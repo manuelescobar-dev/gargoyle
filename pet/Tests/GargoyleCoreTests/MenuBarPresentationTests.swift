@@ -2,7 +2,7 @@ import Testing
 @testable import GargoyleCore
 
 private func ember(_ label: String, _ status: Snapshot.Status) -> Snapshot.Ember {
-  Snapshot.Ember(id: label, label: label, status: status)
+  Snapshot.Ember(id: label, label: label, status: status, since: 0)
 }
 
 private func snap(_ state: Snapshot.State, _ embers: [Snapshot.Ember]) -> Snapshot {

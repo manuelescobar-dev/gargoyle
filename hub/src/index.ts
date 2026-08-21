@@ -20,6 +20,8 @@ const pending = new PendingDecisions();
 let socket: ReturnType<typeof attachWebSocket> | null = null;
 let previous: Snapshot | null = null;
 let nextRequestId = 0;
+/// What the pet last reported about your desktop. It observes; the hub decides.
+let context: { currentSession?: string } = {};
 
 /** What the popover shows. Falls back to the worktree when the payload tells us nothing. */
 function describe(payload: Record<string, unknown>, fallback: string): string {
@@ -39,7 +41,7 @@ const { server } = createHub({
 
   onChange: (snapshot) => {
     socket?.publish(snapshot);
-    socket?.sendMenu(menuFor(snapshot));
+    socket?.sendMenu(menuFor(snapshot, { now: Date.now(), ...context }));
 
     // Speaks rarely, and only about things its body doesn't already show.
     const situation = situationFor(previous, snapshot);
@@ -81,6 +83,19 @@ const { server } = createHub({
   },
 
   onDecision: (id, decision) => pending.answer(id, decision),
+
+  onContext: (reported) => {
+    // The pet reports a *terminal* id; the menu ranks by *session*. Only the hub knows
+    // which agent is running in which terminal, so the bridge belongs here.
+    const terminalId = reported.currentSession;
+    const match = terminalId
+      ? sessions.list().find((s) => s.terminal?.term?.endsWith(terminalId))
+      : undefined;
+    context = { currentSession: match?.id };
+    // Recompute now rather than waiting for the next agent event — you may have switched
+    // windows precisely because you're about to open the menu.
+    if (previous) socket?.sendMenu(menuFor(previous, { now: Date.now(), ...context }));
+  },
 });
 
 socket = attachWebSocket(server, {

@@ -24,10 +24,12 @@ traffic at all. The pet renders this and keeps nothing.
   "t": "state",
   "state": "needs-you",     // one of the nine, see creatures/README.md
   "embers": [
-    { "id": "s1", "label": "api-refactor", "status": "running" },
-    { "id": "s3", "label": "billing-fix",  "status": "blocked" }
+    { "id": "s1", "label": "api-refactor", "status": "running", "since": 1699999 },
+    { "id": "s3", "label": "billing-fix",  "status": "blocked", "since": 1699412 }
   ],
   "mood": 0.5,              // 0 calm → 1 frazzled. drives the palette
+  // `since` is absolute, not a duration — a duration would change every second and put
+  // a frame on the wire each time, for a creature that hasn't moved.
   "blocked": 1,
   "attention": "silent"     // silent | badge | bubble — the interruption ladder, on the wire
 }
@@ -80,6 +82,10 @@ rights to a launchd agent — [decisions/0007](../decisions/0007-who-can-ask-for
 
 ## The three rules this encodes
 
+**The pet observes, the hub decides.** `/context` reports which terminal is frontmost —
+a fact only a desktop app can know. What that *means* for the menu stays in the hub, which
+is the only side that knows which agent runs in which terminal.
+
 **The pet never interprets.** It receives `state: "needs-you"`, never *"billing-fix is blocked."*
 All semantics live in the hub. This is what makes a second surface a hundred lines instead of a
 rewrite.
@@ -100,6 +106,7 @@ The pet answers over HTTP rather than the socket, because these are requests wit
 ```
 POST /action     {"id": "focus:s3"}
 POST /decision   {"id": "r7", "decision": "allow" | "deny"}
+POST /context    {"currentSession": "<terminal id>" | null}
 ```
 
 ## Not on the wire yet

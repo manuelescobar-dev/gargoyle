@@ -15,7 +15,14 @@ export type CreatureState =
   | "listening"
   | "unknown";
 
-export type Ember = { id: string; label: string; status: Session["status"] };
+export type Ember = {
+  id: string;
+  label: string;
+  status: Session["status"];
+  /// When this status began — an absolute time, so an unchanged snapshot stays unchanged
+  /// and doesn't put a frame on the wire every second.
+  since: number;
+};
 
 export type Snapshot = {
   state: CreatureState;
@@ -36,6 +43,7 @@ export function snapshot(sessions: Session[]): Snapshot {
     id: s.id,
     label: s.label,
     status: s.status,
+    since: s.since,
   }));
 
   const blocked = embers.filter((e) => e.status === "blocked").length;

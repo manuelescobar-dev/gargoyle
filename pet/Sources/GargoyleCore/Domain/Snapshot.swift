@@ -11,6 +11,8 @@ public struct Snapshot: Codable, Equatable, Sendable {
     public let id: String
     public let label: String
     public let status: Status
+    /// When this status began. Absolute, so an unchanged snapshot stays unchanged.
+    public let since: Double?
   }
 
   /// The nine states. `unknown` never arrives over the wire — the pet enters it

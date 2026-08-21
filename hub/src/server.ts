@@ -19,6 +19,8 @@ export type HubHandlers = {
     sessionId: string,
   ) => Promise<string | null>;
   onDecision?: (id: string, decision: "allow" | "deny") => void;
+  /// The pet reporting what it can see of the desktop. Data, not decisions.
+  onContext?: (context: { currentSession?: string }) => void;
 };
 
 /** Collects a request body, then hands it over. */
@@ -113,6 +115,21 @@ export function createHub(options: HubHandlers = {}) {
           if (typeof id === "string" && (decision === "allow" || decision === "deny")) {
             options.onDecision?.(id, decision);
           }
+        } catch {
+          // the sender's problem, not ours
+        }
+        done(204);
+      });
+      return;
+    }
+
+    if (req.method === "POST" && req.url === "/context") {
+      void readBody(req).then((body) => {
+        try {
+          const { currentSession } = JSON.parse(body);
+          options.onContext?.({
+            currentSession: typeof currentSession === "string" ? currentSession : undefined,
+          });
         } catch {
           // the sender's problem, not ours
         }
