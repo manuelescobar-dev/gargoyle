@@ -116,3 +116,37 @@ func unknownIsVisiblyDifferent() {
   )
   #expect(unknown.vitality < idle.vitality * 0.5, "and it should look drained")
 }
+
+// `speaking` and `listening` sat in the vocabulary unreachable — the bubble appeared while
+// the body carried on as though nothing were happening.
+
+@Test("speaking turns toward you and holds still enough to read")
+func speakingIsLegible() {
+  let speaking = OctopusPose.from(inputs(state: 6, load: 2))
+  let working = OctopusPose.from(inputs(state: S.working, load: 2))
+
+  #expect(speaking != working)
+  #expect(
+    speaking.arms.map(\.reach).max()! < working.arms.map(\.reach).max()!,
+    "arms draw in — nothing should compete with the words"
+  )
+  #expect(speaking.eyeOpen > 0.8, "it's looking at you")
+}
+
+@Test("listening is attentive rather than busy")
+func listeningIsAttentive() {
+  let listening = OctopusPose.from(inputs(state: 7, load: 3))
+  #expect(listening.eyeOpen > 0.9, "wide open — it's waiting on you")
+  #expect(listening.mantleSquash < 0.35, "leaning in, not tensed up")
+}
+
+@Test("speaking and listening are told apart")
+func speakingIsNotListening() {
+  #expect(OctopusPose.from(inputs(state: 6)) != OctopusPose.from(inputs(state: 7)))
+}
+
+@Test("holding an ember doesn't stop it speaking")
+func speakingStillHoldsEmbers() {
+  let pose = OctopusPose.from(inputs(state: 6, load: 4))
+  #expect(pose.arms.filter(\.holdsEmber).count == 4, "the work doesn't pause because it said something")
+}

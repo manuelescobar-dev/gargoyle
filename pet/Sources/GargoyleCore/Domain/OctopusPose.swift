@@ -39,6 +39,10 @@ public struct OctopusPose: Equatable, Sendable {
     let state = inputs.state
     let asleep = state == 0
     let unknown = state == 8
+    // Saying something, or waiting for you to. Both draw the arms in: nothing should
+    // compete with the words, and stillness is what makes a bubble readable.
+    let attending = state == 6 || state == 7
+    let listening = state == 7
     let holding = min(inputs.load, armCount)
 
     // Central, so the arm that asks for you is the most visible one it has.
@@ -56,6 +60,7 @@ public struct OctopusPose: Equatable, Sendable {
     let baseReach: Double =
       asleep ? 0.34
       : unknown ? 0.62   // slack and searching, not tucked away like sleep
+      : attending ? 0.52 // drawn in, holding still
       : holding > 0 ? 0.72 : 0.60
 
     let arms = (0..<armCount).map { i -> Arm in
@@ -88,7 +93,8 @@ public struct OctopusPose: Equatable, Sendable {
         reach: presenting ? baseReach * 1.55 : baseReach * fan + ripple,
         // Curls away from the middle, so the arms open like an umbrella instead of
         // alternating and crossing into loops. Magnitude grows toward the outside.
-        curl: (t < 0.5 ? -1 : 1) * (abs(t - 0.5) * 2) * (unknown ? 0.30 : 0.10 + inputs.mood * 0.10),
+        curl: (t < 0.5 ? -1 : 1) * (abs(t - 0.5) * 2)
+          * (unknown ? 0.30 : attending ? 0.06 : 0.10 + inputs.mood * 0.10),
         // The asking arm always has one: it is, by definition, holding a light out to you.
         holdsEmber: carrying.contains(i) || presenting,
         isPresenting: presenting
@@ -97,10 +103,11 @@ public struct OctopusPose: Equatable, Sendable {
 
     return OctopusPose(
       arms: arms,
-      mantleSquash: min(1, inputs.mood * 0.6 + Double(holding) / 12.0),
+      // Leaning in rather than tensed: an attentive creature isn't a frazzled one.
+      mantleSquash: attending ? 0.12 : min(1, inputs.mood * 0.6 + Double(holding) / 12.0),
       pupil: asleep ? .zero : CGPoint(x: inputs.gazeX * 0.7, y: inputs.gazeY * 0.7),
-      eyeOpen: asleep ? 0.05 : unknown ? 0.55 : 1.0,
-      vitality: unknown ? 0.22 : asleep ? 0.6 : 1.0
+      eyeOpen: asleep ? 0.05 : unknown ? 0.55 : listening ? 1.0 : attending ? 0.92 : 1.0,
+      vitality: unknown ? 0.22 : asleep ? 0.6 : listening ? 1.12 : 1.0
     )
   }
 }

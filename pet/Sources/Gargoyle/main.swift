@@ -58,6 +58,21 @@ let desktop = DesktopContext { session, undisturbed in
 }
 desktop.start()
 
+// Hold ⌥Space and say it. Answers whatever the creature last asked; if it hasn't asked
+// anything, what you said just isn't for us.
+let talk = PushToTalk(
+  onStart: { creature.setListening(true) },
+  onFinish: { said in
+    creature.setListening(false)
+    guard let said, let pending = creature.pendingNudgeId else { return }
+    let escaped = said.replacingOccurrences(of: "\\", with: "\\\\")
+      .replacingOccurrences(of: "\"", with: "\\\"")
+    Task { await post("/reply", #"{"id":"\#(pending)","text":"\#(escaped)"}"#) }
+    creature.answered()
+  }
+)
+talk.start()
+
 creature.onDecide = { id, approved in
   Task { await post("/decision", #"{"id":"\#(id)","decision":"\#(approved ? "allow" : "deny")"}"#) }
 }

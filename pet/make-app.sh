@@ -39,6 +39,11 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>LSMinimumSystemVersion</key>    <string>14.0</string>
   <!-- No Dock icon, no Cmd-Tab entry. It's a creature, not an application you switch to. -->
   <key>LSUIElement</key>               <true/>
+  <!-- Asked for on first use of push-to-talk, never at launch. -->
+  <key>NSMicrophoneUsageDescription</key>
+  <string>So you can answer the creature by holding a key and speaking, instead of typing.</string>
+  <key>NSSpeechRecognitionUsageDescription</key>
+  <string>To turn what you say into an answer. Recognition happens on this Mac where supported.</string>
 </dict>
 </plist>
 PLIST

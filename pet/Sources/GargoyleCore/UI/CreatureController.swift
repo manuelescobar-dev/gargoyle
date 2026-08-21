@@ -23,6 +23,14 @@ public final class CreatureController {
   private var settled: OctopusPose
   private var clock: Double = 0
   private var wasAsleep = false
+  /// Set while push-to-talk is held.
+  public private(set) var listening = false
+
+  public func setListening(_ value: Bool) {
+    guard listening != value else { return }
+    listening = value
+    refresh()
+  }
   private var link: CADisplayLink?
 
   /// How long a line stays up. Long enough to read on a glance, short enough that it
@@ -71,6 +79,15 @@ public final class CreatureController {
   /// is the signal, and a window appearing over your work uninvited is how Clippy failed.
   public func awaiting(_ request: (id: String, summary: String)?) {
     self.request = request
+  }
+
+  /// What the creature last asked, if it's still waiting on an answer.
+  public var pendingNudgeId: String? { nudge?.replyable == true ? nudge?.id : nil }
+
+  /// Clears the question once it's been answered by voice.
+  public func answered() {
+    nudge = nil
+    view.speech = nil
   }
 
   /// A question from one of your sources. Shown in the bubble; answered in the popover.
@@ -156,8 +173,15 @@ public final class CreatureController {
     let gaze = CreatureInputs.gaze(cursor: NSEvent.mouseLocation, from: home, reach: Self.gazeReach)
 
     var current = inputs
-    // `asleep` is state 0 — see CreatureInputs. The hub can't know you walked away.
-    if wasAsleep { current = CreatureInputs(state: 0, load: current.load, blocked: 0, mood: 0) }
+    // Two states only the pet can know: the hub can't tell you walked away, and it can't
+    // tell how long a bubble has been on screen. Everything else comes down the wire.
+    if wasAsleep {
+      current = CreatureInputs(state: 0, load: current.load, blocked: 0, mood: 0)
+    } else if listening {
+      current = CreatureInputs(state: 7, load: current.load, blocked: current.blocked, mood: current.mood)
+    } else if view.speech != nil {
+      current = CreatureInputs(state: 6, load: current.load, blocked: current.blocked, mood: current.mood)
+    }
     current.gazeX = gaze.x
     current.gazeY = gaze.y
 
