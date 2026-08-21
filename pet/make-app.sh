@@ -42,6 +42,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <!-- Asked for on first use of push-to-talk, never at launch. -->
   <key>NSMicrophoneUsageDescription</key>
   <string>So you can answer the creature by holding a key and speaking, instead of typing.</string>
+  <key>NSUserNotificationAlertStyle</key>       <string>banner</string>
   <key>NSSpeechRecognitionUsageDescription</key>
   <string>To turn what you say into an answer. Recognition happens on this Mac where supported.</string>
 </dict>

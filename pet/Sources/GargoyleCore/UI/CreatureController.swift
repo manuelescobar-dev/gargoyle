@@ -21,6 +21,7 @@ public final class CreatureController {
   private var speechUntil: Double = -1
   private var clock: Double = 0
   private var wasAsleep = false
+  private var escalation = Escalation()
   /// Set while push-to-talk is held.
   public private(set) var listening = false
 
@@ -92,6 +93,17 @@ public final class CreatureController {
   }
 
   public func apply(_ snapshot: Snapshot?, menu: Menu = .empty) {
+    // The ladder's top rung, and the only one that leaves the screen. The hub decides when
+    // it's earned; this just makes sure it happens once.
+    if escalation.shouldNotify(snapshot?.attention) {
+      let waiting = snapshot?.embers.filter { $0.status == .blocked }.map(\.label) ?? []
+      Notify.send(
+        waiting.count == 1
+          ? "\(waiting[0]) has been waiting a while."
+          : "\(waiting.count) agents have been waiting a while."
+      )
+    }
+
     inputs = CreatureInputs.from(snapshot)
     self.menu = menu
     summary = MenuBarPresentation.from(snapshot).summary

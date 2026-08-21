@@ -5,12 +5,6 @@ import AppKit
 public final class SlimeView: CreatureView, CreatureRenderer {
   private var pose: SlimePose = .from(CreatureInputs.from(nil))
   private var breath: Double = 0
-  public var speech: String? {
-    didSet {
-      if speech != oldValue { needsDisplay = true }
-    }
-  }
-
   public func show(_ inputs: CreatureInputs, breath: Double) {
     let next = SlimePose.from(inputs)
     guard next != pose || breath != self.breath else { return }
@@ -77,6 +71,10 @@ public final class SlimeView: CreatureView, CreatureRenderer {
     }
 
     drawEyes(centre: centre, width: width, height: height, context: context)
+    drawSpeech(
+      above: CGRect(x: centre.x - width, y: centre.y - height, width: width * 2, height: height * 2),
+      in: context
+    )
   }
 
   private func drawEyes(centre: CGPoint, width: Double, height: Double, context: CGContext) {

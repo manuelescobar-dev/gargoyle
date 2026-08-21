@@ -12,9 +12,6 @@ public protocol CreatureRenderer: CreatureView {
   /// Show this. Called on every frame the creature is visible.
   func show(_ inputs: CreatureInputs, breath: Double)
 
-  /// What it's saying, if anything.
-  var speech: String? { get set }
-
   /// Where the body actually is, so clicks on empty pixels pass through.
   func updateHitRegion()
 }

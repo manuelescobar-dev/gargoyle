@@ -35,14 +35,6 @@ public final class OctopusView: CreatureView, CreatureRenderer {
     didSet { needsDisplay = true }
   }
 
-  /// What it's saying, if anything. Nil most of the time, by design.
-  public var speech: String? {
-    didSet {
-      guard speech != oldValue else { return }
-      needsDisplay = true
-    }
-  }
-
   private var mantleRadius: Double { min(bounds.width, bounds.height) * 0.145 }
   /// The head sits high; big head, small body is most of what makes a thing read as cute.
   /// Sits below centre, leaving the upper third for whatever it has to say.
@@ -83,7 +75,7 @@ public final class OctopusView: CreatureView, CreatureRenderer {
 
     drawEyes(in: head, context: context)
     drawMouth(in: head, context: context)
-    if let speech { drawSpeech(speech, above: head, context: context) }
+    drawSpeech(above: head, in: context)
   }
 
   private func draw(
@@ -195,55 +187,6 @@ public final class OctopusView: CreatureView, CreatureRenderer {
         in: CGRect(x: px - pupil * 0.06, y: py + pupil * 0.12, width: glint, height: glint)
       )
     }
-  }
-
-  /// A soft rounded bubble above the head. No tail, no border — it should feel like the
-  /// creature thinking out loud, not a UI element docked to it.
-  private func drawSpeech(_ text: String, above head: CGRect, context: CGContext) {
-    let font = NSFont.systemFont(ofSize: max(10, bounds.width * 0.058), weight: .medium)
-    let attributes: [NSAttributedString.Key: Any] = [
-      .font: font,
-      .foregroundColor: NSColor(calibratedWhite: 0.16, alpha: 0.92),
-    ]
-    let string = NSAttributedString(string: text, attributes: attributes)
-
-    let padding = bounds.width * 0.05
-    let maxTextWidth = bounds.width - padding * 4
-    let measured = string.boundingRect(
-      with: CGSize(width: maxTextWidth, height: .greatestFiniteMagnitude),
-      options: [.usesLineFragmentOrigin]
-    )
-    let textSize = CGSize(width: ceil(min(measured.width, maxTextWidth)), height: ceil(measured.height))
-
-    let bubble = CGRect(
-      x: bounds.midX - textSize.width / 2 - padding,
-      y: head.maxY + bounds.height * 0.04,
-      width: textSize.width + padding * 2,
-      height: textSize.height + padding * 1.5
-    )
-    guard bubble.maxY < bounds.maxY, bubble.minX > bounds.minX else { return }
-
-    context.setShadow(
-      offset: CGSize(width: 0, height: -1),
-      blur: 6,
-      color: NSColor(calibratedWhite: 0, alpha: 0.16).cgColor
-    )
-    context.setFillColor(NSColor(calibratedWhite: 0.99, alpha: 0.97).cgColor)
-    context.addPath(CGPath(roundedRect: bubble, cornerWidth: bubble.height / 2,
-                           cornerHeight: bubble.height / 2, transform: nil))
-    context.fillPath()
-    context.setShadow(offset: .zero, blur: 0, color: nil)
-
-    // Drawn into a bounded rect so a long line wraps instead of running off the bubble.
-    string.draw(
-      with: CGRect(
-        x: bubble.midX - textSize.width / 2,
-        y: bubble.midY - textSize.height / 2,
-        width: textSize.width,
-        height: textSize.height
-      ),
-      options: [.usesLineFragmentOrigin]
-    )
   }
 
   /// A small smile. Cheap, and it's the difference between a creature that tolerates you

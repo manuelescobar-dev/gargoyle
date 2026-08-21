@@ -19,7 +19,7 @@ func renderPreviews() throws {
     ("needs-you", CreatureInputs(state: 3, load: 4, blocked: 1, mood: 0.5)),
     ("unknown", CreatureInputs(state: 8, load: 0, blocked: 0, mood: 0)),
   ]
-  let speaking: Set<String> = ["idle"]
+  let speaking: Set<String> = ["idle"]  // both creatures should manage this
 
   var root = URL(fileURLWithPath: #filePath)
   for _ in 0..<4 { root.deleteLastPathComponent() }
