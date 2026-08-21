@@ -22,6 +22,7 @@ public final class CreatureController {
   private var speechUntil: Double = -1
   private var settled: OctopusPose
   private var clock: Double = 0
+  private var wasAsleep = false
   private var link: CADisplayLink?
 
   /// How long a line stays up. Long enough to read on a glance, short enough that it
@@ -35,6 +36,11 @@ public final class CreatureController {
   /// How far away the cursor can be and still be worth looking at.
   private static let gazeReach: Double = 600
 
+  /// Where you last put it. A plain file rather than UserDefaults, which is keyed by
+  /// bundle id and behaves differently under `swift run`.
+  private static let homeFile = URL(fileURLWithPath: NSHomeDirectory())
+    .appending(path: "Library/Application Support/Gargoyle/home.json")
+
   public init() {
     settled = .from(CreatureInputs.from(nil))
     view = OctopusView(frame: panel.contentLayoutRect)
@@ -42,6 +48,20 @@ public final class CreatureController {
     panel.contentView = view
     view.onClick = { [weak self] in self?.toggle() }
     moveHome()
+
+    // Dragging is how you move it, so that's when to remember where it went.
+    NotificationCenter.default.addObserver(
+      forName: NSWindow.didMoveNotification,
+      object: panel,
+      queue: .main
+    ) { [weak self] _ in MainActor.assumeIsolated { self?.rememberHome() } }
+
+    // A remembered spot can end up on a screen that no longer exists.
+    NotificationCenter.default.addObserver(
+      forName: NSApplication.didChangeScreenParametersNotification,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in MainActor.assumeIsolated { self?.moveHome() } }
     panel.orderFront(nil)
     apply(nil)
     startAnimating()
@@ -102,17 +122,33 @@ public final class CreatureController {
     speechUntil = clock + Self.speechDuration
   }
 
-  /// Bottom-right by default. It has a home and it stays there — a creature you have to
-  /// hunt for is one you stop glancing at.
+  /// Where you left it, pulled back into view if that spot is gone. It has a home and it
+  /// stays there — a creature you have to hunt for is one you stop glancing at.
   private func moveHome() {
     guard let screen = NSScreen.main else { return }
-    let size = panel.frame.size
-    panel.setFrameOrigin(
-      NSPoint(
-        x: screen.visibleFrame.maxX - size.width - 24,
-        y: screen.visibleFrame.minY + 24
-      )
+    let placed = Resting.home(
+      remembered: rememberedHome(),
+      on: screen.visibleFrame,
+      size: panel.frame.size
     )
+    panel.setFrameOrigin(NSPoint(x: placed.x, y: placed.y))
+  }
+
+  private func rememberedHome() -> CGPoint? {
+    guard let data = try? Data(contentsOf: Self.homeFile),
+          let point = try? JSONDecoder().decode([String: Double].self, from: data),
+          let x = point["x"], let y = point["y"]
+    else { return nil }
+    return CGPoint(x: x, y: y)
+  }
+
+  private func rememberHome() {
+    let origin = panel.frame.origin
+    try? FileManager.default.createDirectory(
+      at: Self.homeFile.deletingLastPathComponent(), withIntermediateDirectories: true
+    )
+    let encoded = try? JSONEncoder().encode(["x": origin.x, "y": origin.y])
+    try? encoded?.write(to: Self.homeFile)
   }
 
   private func refresh() {
@@ -120,6 +156,8 @@ public final class CreatureController {
     let gaze = CreatureInputs.gaze(cursor: NSEvent.mouseLocation, from: home, reach: Self.gazeReach)
 
     var current = inputs
+    // `asleep` is state 0 — see CreatureInputs. The hub can't know you walked away.
+    if wasAsleep { current = CreatureInputs(state: 0, load: current.load, blocked: 0, mood: 0) }
     current.gazeX = gaze.x
     current.gazeY = gaze.y
 
@@ -139,8 +177,21 @@ public final class CreatureController {
   }
 
   @objc private func tick() {
-    // Asleep or hidden behind something is genuinely zero work — no frames, no gaze polling.
-    guard inputs.state != 0, panel.occlusionState.contains(.visible) else { return }
+    // Zero work while asleep or hidden: no frames, no gaze polling, no osascript.
+    guard panel.occlusionState.contains(.visible) else { return }
+
+    let idle = Resting.idleSeconds()
+    let asleep = Resting.shouldSleep(
+      idleSeconds: idle,
+      after: Resting.defaultIdleSeconds,
+      blocked: inputs.blocked
+    )
+    if asleep != wasAsleep {
+      wasAsleep = asleep
+      Trace.log("creature \(asleep ? "asleep" : "awake") (idle \(Int(idle))s)")
+      refresh()
+    }
+    guard !asleep else { return }
     clock += 1.0 / 60
     if view.speech != nil, clock > speechUntil { view.speech = nil }
     view.breath = clock * 1.05
