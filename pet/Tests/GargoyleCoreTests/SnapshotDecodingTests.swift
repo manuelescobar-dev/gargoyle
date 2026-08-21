@@ -19,6 +19,14 @@ func decodesFixture() throws {
   #expect(s.embers.map(\.label) == ["api-refactor", "gargoyle", "billing-fix"])
   #expect(s.embers.last?.status == .blocked)
   #expect(s.embers.first?.since != nil, "the surface needs this to rank by how long it's waited")
+  #expect(s.attention == .badge, "the ladder travels with the state it applies to")
+}
+
+@Test("an attention level the pet has never heard of stays quiet")
+func forwardCompatibleAttention() throws {
+  let json = #"{"state":"idle","embers":[],"mood":0,"blocked":0,"attention":"klaxon"}"#.data(using: .utf8)!
+  let s = try JSONDecoder().decode(Snapshot.self, from: json)
+  #expect(s.attention == .silent, "an unknown level must never be louder than the quietest one")
 }
 
 @Test("a state the pet has never heard of degrades instead of crashing")

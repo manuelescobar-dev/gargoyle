@@ -6,6 +6,18 @@ public struct Snapshot: Codable, Equatable, Sendable {
   public let embers: [Ember]
   public let mood: Double
   public let blocked: Int
+  /// How loudly the hub says this may be shown. The creature never decides this itself.
+  public let attention: Attention?
+
+  /// The interruption ladder. `sound` is deliberately not on it.
+  public enum Attention: String, Codable, Sendable {
+    case silent, badge, bubble, notify
+
+    public init(from decoder: Decoder) throws {
+      let raw = try decoder.singleValueContainer().decode(String.self)
+      self = Attention(rawValue: raw) ?? .silent
+    }
+  }
 
   public struct Ember: Codable, Equatable, Sendable {
     public let id: String

@@ -95,8 +95,13 @@ change appearance silently  →  badge/count  →  speech bubble on next glance
    →  real notification (small allowlist)  →  sound (almost never)
 ```
 
-Respect macOS Focus modes. Batch anything non-urgent. Gargoyle is something you *look at*, not something that
-*talks to you*.
+Every escalation goes through one function, not through conditions scattered wherever they
+were convenient. If that logic spreads you can never tune the noise, and noise is what kills this.
+
+macOS Focus state isn't readable without Full Disk Access, and asking for that so a creature
+can know you're in Do Not Disturb is a bad trade. So we read what's free: a frontmost app
+filling the screen. Presenting, watching, or deep in something fullscreen is the case this
+was really about. Gargoyle is something you *look at*, not something that *talks to you*.
 
 ### Deliver on the next natural glance
 

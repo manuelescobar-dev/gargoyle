@@ -9,11 +9,12 @@ import AppKit
 /// Event-driven rather than polled. Nothing runs while you stay in one app.
 @MainActor
 public final class DesktopContext {
-  private let report: (String?) -> Void
+  private let report: (String?, Bool) -> Void
   private var observer: NSObjectProtocol?
-  private var lastReported: String??
+  private var recheck: Timer?
+  private var lastReported: (session: String?, undisturbed: Bool)?
 
-  public init(report: @escaping (String?) -> Void) {
+  public init(report: @escaping (String?, Bool) -> Void) {
     self.report = report
   }
 
@@ -26,17 +27,32 @@ public final class DesktopContext {
       let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
       MainActor.assumeIsolated { self?.activated(app) }
     }
+    // Entering fullscreen doesn't change which app is frontmost, so activation alone
+    // would miss it. Cheap enough to look now and then; reports only on change.
+    let timer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+      MainActor.assumeIsolated { self?.activated(NSWorkspace.shared.frontmostApplication) }
+    }
+    RunLoop.main.add(timer, forMode: .common)
+    recheck = timer
+
     activated(NSWorkspace.shared.frontmostApplication)
+  }
+
+  public func stopRechecking() {
+    recheck?.invalidate()
+    recheck = nil
   }
 
   private func activated(_ app: NSRunningApplication?) {
     // Only asked when you switch *into* a terminal we can query — an osascript call on
     // every app switch would be a poll wearing an event's clothes.
     let session = app?.bundleIdentifier == "com.googlecode.iterm2" ? currentITermSession() : nil
+    let undisturbed = Undisturbed.now()
 
-    guard lastReported != .some(session) else { return }
-    lastReported = .some(session)
-    report(session)
+    guard lastReported?.session != session || lastReported?.undisturbed != undisturbed else { return }
+    lastReported = (session, undisturbed)
+    Trace.log("context: session=\(session ?? "none") undisturbed=\(undisturbed)")
+    report(session, undisturbed)
   }
 
   private func currentITermSession() -> String? {

@@ -10,7 +10,8 @@ private func snap(_ state: Snapshot.State, _ embers: [Snapshot.Ember]) -> Snapsh
     state: state,
     embers: embers,
     mood: Double(embers.count) / 6.0,
-    blocked: embers.filter { $0.status == .blocked }.count
+    blocked: embers.filter { $0.status == .blocked }.count,
+    attention: nil
   )
 }
 

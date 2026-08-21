@@ -34,7 +34,7 @@ func dropPresentsAsUnreachable() {
   let presentation = MenuBarPresentation.from(state.latest)
   #expect(presentation.summary == "hub unreachable")
   #expect(presentation != MenuBarPresentation.from(
-    Snapshot(state: .idle, embers: [], mood: 0, blocked: 0)
+    Snapshot(state: .idle, embers: [], mood: 0, blocked: 0, attention: nil)
   ))
 }
 

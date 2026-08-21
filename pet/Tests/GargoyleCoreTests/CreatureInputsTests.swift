@@ -6,7 +6,7 @@ private func snap(_ state: Snapshot.State, running: Int = 0, blocked: Int = 0) -
   let embers =
     (0..<running).map { Snapshot.Ember(id: "r\($0)", label: "r\($0)", status: .running, since: 0) }
     + (0..<blocked).map { Snapshot.Ember(id: "b\($0)", label: "b\($0)", status: .blocked, since: 0) }
-  return Snapshot(state: state, embers: embers, mood: 0.25, blocked: blocked)
+  return Snapshot(state: state, embers: embers, mood: 0.25, blocked: blocked, attention: nil)
 }
 
 // The index is a contract with every .riv file ever authored. Reordering it silently

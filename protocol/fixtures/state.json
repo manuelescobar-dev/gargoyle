@@ -24,5 +24,6 @@
     }
   ],
   "mood": 0.5,
-  "blocked": 1
+  "blocked": 1,
+  "attention": "badge"
 }

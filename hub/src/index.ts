@@ -28,7 +28,16 @@ let socket: ReturnType<typeof attachWebSocket> | null = null;
 let previous: Snapshot | null = null;
 let nextRequestId = 0;
 /// What the pet last reported about your desktop. It observes; the hub decides.
-let context: { currentSession?: string } = {};
+let context: { currentSession?: string; undisturbed?: boolean } = {};
+
+/// Everything that wants your attention is measured against these.
+function surroundings(moment: string): Surroundings {
+  return {
+    moment,
+    busy: previous?.state === "needs-you",
+    undisturbed: context.undisturbed === true,
+  };
+}
 
 const nudges = new NudgeQueue();
 /// Nudges we've asked but not yet heard back on, so a reply knows where to go.
@@ -40,8 +49,8 @@ let nextNudgeId = 0;
  * urgent is happening. Asking is free then; interrupting is not.
  */
 function maybeNudge(moment: string) {
-  const busy = previous?.state === "needs-you";
-  const nudge = nudges.takeFor(moment, Date.now(), { busy });
+  const allowed = levelFor({ kind: "nudge" }, surroundings(moment)) === "bubble";
+  const nudge = nudges.take(allowed);
   if (!nudge) return;
 
   const id = `n${++nextNudgeId}`;
@@ -70,8 +79,11 @@ const { server } = createHub({
     socket?.sendMenu(menuFor(snapshot, { now: Date.now(), ...context }));
 
     // Speaks rarely, and only about things its body doesn't already show.
+    // A finished run is a moment you look over, so that's when its own voice is allowed.
     const situation = situationFor(previous, snapshot);
-    if (situation) socket?.speak(situation);
+    if (situation && levelFor({ kind: "voice", situation }, surroundings("finished")) === "bubble") {
+      socket?.speak(situation);
+    }
 
     const wasRunning = previous?.state === "working" || previous?.state === "needs-you";
     previous = snapshot;
@@ -128,13 +140,14 @@ const { server } = createHub({
   },
 
   onContext: (reported) => {
+    context.undisturbed = reported.undisturbed;
     // The pet reports a *terminal* id; the menu ranks by *session*. Only the hub knows
     // which agent is running in which terminal, so the bridge belongs here.
     const terminalId = reported.currentSession;
     const match = terminalId
       ? sessions.list().find((s) => s.terminal?.term?.endsWith(terminalId))
       : undefined;
-    context = { currentSession: match?.id };
+    context = { currentSession: match?.id, undisturbed: reported.undisturbed };
     // Coming back to a terminal is a glance.
     maybeNudge("returned");
     // Recompute now rather than waiting for the next agent event — you may have switched

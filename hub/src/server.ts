@@ -21,7 +21,7 @@ export type HubHandlers = {
   ) => Promise<string | null>;
   onDecision?: (id: string, decision: "allow" | "deny") => void;
   /// The pet reporting what it can see of the desktop. Data, not decisions.
-  onContext?: (context: { currentSession?: string }) => void;
+  onContext?: (context: { currentSession?: string; undisturbed?: boolean }) => void;
   /// Something worth asking, queued until asking is free.
   onNudge?: (nudge: { text: string; replyTo?: string; expiresInMs?: number }) => void;
   /// Your answer to a nudge, on its way to wherever you said it should go.
@@ -167,9 +167,10 @@ export function createHub(options: HubHandlers = {}) {
     if (req.method === "POST" && req.url === "/context") {
       void readBody(req).then((body) => {
         try {
-          const { currentSession } = JSON.parse(body);
+          const { currentSession, undisturbed } = JSON.parse(body);
           options.onContext?.({
             currentSession: typeof currentSession === "string" ? currentSession : undefined,
+            undisturbed: undisturbed === true,
           });
         } catch {
           // the sender's problem, not ours

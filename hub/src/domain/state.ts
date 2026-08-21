@@ -1,3 +1,4 @@
+import { levelFor, type Level, type Surroundings } from "./attention.ts";
 import type { Session } from "./sessions.ts";
 
 /**
@@ -31,6 +32,8 @@ export type Snapshot = {
   embers: Ember[];
   mood: number; // 0 calm → 1 frazzled
   blocked: number;
+  /// How loudly this may be shown — the interruption ladder, on the wire at last.
+  attention: Level;
 };
 
 /** Load at which the creature reads as fully overwhelmed. */
@@ -40,7 +43,11 @@ const FRAZZLED_AT = 6;
  * The whole visual state, derived fresh every time. The pet renders exactly this and
  * keeps nothing, which is what makes it structurally unable to accumulate logic.
  */
-export function snapshot(sessions: Session[]): Snapshot {
+export function snapshot(
+  sessions: Session[],
+  surroundings: Surroundings = { moment: "", busy: false, undisturbed: false },
+  now = Date.now(),
+): Snapshot {
   const embers: Ember[] = sessions.map((s) => ({
     id: s.id,
     label: s.label,
@@ -62,10 +69,19 @@ export function snapshot(sessions: Session[]): Snapshot {
   else if (failed > 0) state = "failed";
   else if (done > 0) state = "done";
 
+  // The longest wait decides how loud this is allowed to get.
+  const oldestBlocked = embers
+    .filter((e) => e.status === "blocked")
+    .reduce((oldest, e) => Math.min(oldest, e.since), now);
+
   return {
     state,
     embers,
     mood: Math.min(1, embers.length / FRAZZLED_AT),
     blocked,
+    attention:
+      blocked > 0
+        ? levelFor({ kind: "blocked", waitedMs: now - oldestBlocked }, surroundings)
+        : levelFor({ kind: "state" }, surroundings),
   };
 }

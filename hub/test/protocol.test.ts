@@ -35,5 +35,7 @@ test("the hub still produces the shape the pet decodes", () => {
     });
   }
 
-  assert.deepEqual(snapshot(sessions.list()), fixture);
+  // A fixed `now` keeps the interruption level deterministic — otherwise the fixture
+  // would drift to "notify" the moment the clock moved.
+  assert.deepEqual(snapshot(sessions.list(), undefined, 100), fixture);
 });

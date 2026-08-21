@@ -52,8 +52,9 @@ creature.onAction = { id in
 // Approving from the popover answers a hook that is holding the tool call open.
 // Reports which terminal you're looking at, so the hub can rank the menu. Event-driven:
 // nothing runs while you stay in one app.
-let desktop = DesktopContext { session in
-  Task { await post("/context", #"{"currentSession":\#(session.map { "\"\($0)\"" } ?? "null")}"#) }
+let desktop = DesktopContext { session, undisturbed in
+  let id = session.map { "\"\($0)\"" } ?? "null"
+  Task { await post("/context", #"{"currentSession":\#(id),"undisturbed":\#(undisturbed)}"#) }
 }
 desktop.start()
 

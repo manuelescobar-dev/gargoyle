@@ -8,9 +8,6 @@ export type Nudge = {
 
 type Queued = Nudge & { queuedAt: number };
 
-/** Moments where you're already looking at the creature, so its attention costs nothing. */
-const GLANCES = new Set(["glance", "finished", "returned", "clicked"]);
-
 /**
  * Things worth asking, held until asking is free.
  *
@@ -30,19 +27,18 @@ export class NudgeQueue {
   }
 
   /**
-   * Hands over one nudge if this is a moment you're already looking, and nothing more
-   * urgent is happening. Drops anything that has gone stale on the way.
+   * Hands over one nudge, if the caller says now is a moment worth asking at.
+   *
+   * *Whether* it's such a moment is not decided here — that's the interruption ladder's
+   * job, and it's the only place that decision is allowed to live. This just holds things
+   * and drops what has gone stale on the way.
    */
-  takeFor(moment: string, now = Date.now(), state: { busy?: boolean } = {}): Nudge | null {
+  take(allowed: boolean, now = Date.now()): Nudge | null {
     // Expire first, so a stale nudge is discarded even at a moment we wouldn't ask.
     this.queue = this.queue.filter(
       (n) => n.expiresInMs === undefined || now - n.queuedAt <= n.expiresInMs,
     );
 
-    if (!GLANCES.has(moment)) return null;
-    // Mid-decision about something that matters is not the moment to ask about lunch.
-    if (state.busy) return null;
-
-    return this.queue.shift() ?? null;
+    return allowed ? (this.queue.shift() ?? null) : null;
   }
 }
