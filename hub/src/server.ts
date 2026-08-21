@@ -190,5 +190,18 @@ export function createHub(options: HubHandlers = {}) {
     done(404);
   });
 
+  // Running `npm start` while the launch agent is up is an easy mistake, and a raw
+  // EADDRINUSE stack trace is a poor way to find that out. Registered here so it's in
+  // place before anything else can attach to the server.
+  server.on("error", (error: NodeJS.ErrnoException) => {
+    if (error.code !== "EADDRINUSE") throw error;
+    console.error(
+      `✗ something is already listening on 127.0.0.1:${PORT}.\n` +
+        "  That's probably the launch agent — either use it, or stop it first:\n" +
+        "    launchctl bootout gui/$(id -u)/dev.gargoyle.hub",
+    );
+    process.exit(1);
+  });
+
   return { server, sessions, health: () => ({ eventsReceived }) };
 }

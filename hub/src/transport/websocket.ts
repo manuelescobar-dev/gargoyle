@@ -23,6 +23,9 @@ export function attachWebSocket(
 
   let lastMenu: string | null = null;
   const wss = new WebSocketServer({ server, path: "/socket" });
+  // ws forwards the http server's errors to its own listeners. Swallowed here because
+  // the hub installs a real handler on the server itself.
+  wss.on("error", () => {});
 
   wss.on("connection", (socket) => {
     clients.add(socket);

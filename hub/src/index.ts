@@ -2,8 +2,13 @@ import { PendingDecisions } from "./domain/decisions.ts";
 import { menuFor } from "./domain/menu.ts";
 import { NudgeQueue, type Nudge } from "./domain/nudges.ts";
 import { deliverReply } from "./actions/reply.ts";
+import { readSources } from "./setup/sources.ts";
+import { startScheduler } from "./scheduler.ts";
+import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { Sessions } from "./domain/sessions.ts";
-import type { Snapshot } from "./domain/state.ts";
+import { snapshot, type Snapshot } from "./domain/state.ts";
 import { situationFor } from "./domain/voice.ts";
 import { createHub, PORT } from "./server.ts";
 import { attachWebSocket } from "./transport/websocket.ts";
@@ -141,6 +146,34 @@ const { server } = createHub({
 socket = attachWebSocket(server, {
   // A surface that disappears mid-question must not leave agents hanging.
   onLastClientGone: () => pending.abandonAll(),
+});
+
+// Declared sources: commands you run on a schedule whose output becomes embers or nudges.
+// Most people won't have any, and a hub with none costs nothing.
+const configPath = process.env.GARGOYLE_CONFIG ?? join(homedir(), ".gargoyle", "config.json");
+let config: unknown;
+try {
+  config = existsSync(configPath) ? JSON.parse(readFileSync(configPath, "utf8")) : undefined;
+} catch (error) {
+  console.log(`config: ${configPath} isn't valid JSON — ${(error as Error).message}`);
+}
+
+const { sources, problems } = readSources(config);
+for (const problem of problems) console.log(`config: ${problem}`);
+if (sources.length) console.log(`config: ${sources.length} source(s) declared`);
+
+startScheduler(sources, {
+  ember: (event) => {
+    sessions.apply(event);
+    sessions.prune();
+    const next = snapshot(sessions.list());
+    socket?.publish(next);
+    socket?.sendMenu(menuFor(next, { now: Date.now(), ...context }));
+    previous = next;
+  },
+  nudge: (nudge) => nudges.add(nudge),
+  // Nothing new starts while an agent is waiting on you — that attention is spoken for.
+  busy: () => previous?.state === "needs-you",
 });
 
 server.listen(PORT, "127.0.0.1", () => {
