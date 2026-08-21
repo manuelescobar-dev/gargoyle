@@ -93,7 +93,11 @@ switch (process.argv[2]) {
     writeFileSync(plistPath, plistFor({ node: process.execPath, script: hubScript, logDir }));
 
     launchctl("bootout", `${domain}/${AGENT_LABEL}`); // ignore failure: usually not loaded yet
-    const loaded = launchctl("bootstrap", domain, plistPath) || launchctl("load", "-w", plistPath);
+    launchctl("bootstrap", domain, plistPath) || launchctl("load", "-w", plistPath);
+    // Ask launchd rather than trusting the exit code. `bootstrap` immediately after
+    // `bootout` can report success while the service never comes up, and an installer
+    // that says "✓" when it didn't work is worse than one that fails loudly.
+    const loaded = launchctl("print", `${domain}/${AGENT_LABEL}`);
 
     console.log(
       loaded
@@ -109,8 +113,8 @@ switch (process.argv[2]) {
       writeFileSync(petPlistPath, petPlistFor({ app: installedApp, logDir }));
 
       launchctl("bootout", `${domain}/${PET_LABEL}`);
-      const petLoaded =
-        launchctl("bootstrap", domain, petPlistPath) || launchctl("load", "-w", petPlistPath);
+      launchctl("bootstrap", domain, petPlistPath) || launchctl("load", "-w", petPlistPath);
+      const petLoaded = launchctl("print", `${domain}/${PET_LABEL}`);
       console.log(
         petLoaded
           ? `✓ creature installed to ${installedApp} — it starts at login too`

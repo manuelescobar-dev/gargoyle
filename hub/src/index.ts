@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { deliverReply } from "./actions/reply.ts";
+import { levelFor, type Surroundings } from "./domain/attention.ts";
 import { PendingDecisions } from "./domain/decisions.ts";
 import { menuFor } from "./domain/menu.ts";
 import { type Nudge, NudgeQueue } from "./domain/nudges.ts";

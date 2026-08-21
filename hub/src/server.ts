@@ -4,7 +4,8 @@ import { snapshot } from "./domain/state.ts";
 import { fromClaudeHook } from "./sources/claude-code.ts";
 import { fromGeneric } from "./sources/generic.ts";
 
-export const PORT = 7373;
+/// Overridable so tests can run against a real hub without fighting the installed one.
+export const PORT = Number(process.env.GARGOYLE_PORT) || 7373;
 
 export type HubHandlers = {
   sessions?: Sessions;
@@ -108,8 +109,10 @@ export function createHub(options: HubHandlers = {}) {
         try {
           const { id } = JSON.parse(body);
           if (typeof id === "string") options.onAction?.(id);
-        } catch {
-          // the sender's problem, not ours
+        } catch (error) {
+          // A malformed body is the sender's problem, but a handler that throws is ours —
+          // swallowing both identically hid a real bug for an embarrassingly long time.
+          console.log(`action failed: ${(error as Error).message}`);
         }
         done(204);
       });
