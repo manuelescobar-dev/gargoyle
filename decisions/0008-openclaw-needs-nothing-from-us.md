@@ -50,3 +50,43 @@ is fully useful without OpenClaw because it never learned OpenClaw exists.
 Nothing about OpenClaw. If we ever wanted the *reverse* — Gargoyle driving OpenClaw rather
 than surfacing for it — that's a different design, and it would be the hub calling skills
 directly rather than pretending to be a channel.
+
+---
+
+## Revised 2026-08-21 — it needs no plugin either
+
+The above assumed a channel plugin would be written, just not here. Two things changed that.
+
+**The documented API isn't in the shipping version.** OpenClaw 2026.1.30's `plugin-sdk`
+exports 171 names and not one of them starts with `define`; `openclaw/plugin-sdk/core`
+doesn't resolve at all. `defineChannelPluginEntry` describes a version that isn't the one
+installed, so writing against the docs would mean writing against something that isn't there.
+
+**And a plugin turns out to be unnecessary.** The CLI already closes both halves:
+
+```bash
+# OpenClaw asks, through a skill or a cron job
+curl -s -X POST localhost:7373/nudge \
+  -d '{"text":"what did you eat?","reply_to":"openclaw agent -m \"$(cat)\""}'
+```
+
+Outbound is a `curl`. Inbound is `reply_to` — which runs a command with your answer on
+stdin — pointed at `openclaw agent -m`. The answer goes back as a real agent turn.
+
+That's the entire integration, and it's **configuration rather than code**. No plugin, no
+package, no dependency, nothing in either repo.
+
+## Why this keeps happening
+
+Twice now the OpenClaw integration has turned out to need less than expected, and both
+times for the same reason: [0005](0005-a-surface-not-a-suite.md). We built one general door
+instead of an integration, so the integration keeps arriving as an ordinary user of the door.
+
+The lesson isn't about OpenClaw. It's that a general mechanism is worth more than the
+specific feature it was avoided for — and you find that out later, not when you build it.
+
+## Not verified end to end
+
+The pieces are each confirmed — `/nudge` and `reply_to` are tested and were run against the
+installed hub, and `openclaw agent -m` exists in the CLI. The composition is not tested,
+because running it invokes a real agent turn on someone's account, which isn't ours to spend.

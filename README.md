@@ -102,6 +102,19 @@ command you named. Gargoyle stores nothing itself.
 That's the whole of it: Gargoyle ships the part that's hard, which is asking at a moment
 you don't mind being asked.
 
+## Using it with OpenClaw
+
+No plugin, no package — the two doors are enough. Point a skill or cron job at `/nudge`, and
+send the answer back with `openclaw agent`:
+
+```bash
+curl -s -X POST localhost:7373/nudge \
+  -d '{"text":"what did you eat?","reply_to":"openclaw agent -m \"$(cat)\""}'
+```
+
+Gargoyle asks when you're already looking, your answer becomes an agent turn, and Gargoyle
+stores none of it. It works just as well without OpenClaw — it never learned OpenClaw exists.
+
 To disconnect completely:
 
 ```bash
