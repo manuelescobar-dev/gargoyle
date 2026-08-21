@@ -2,6 +2,7 @@ import { createHub, PORT } from "./server.ts";
 import { attachWebSocket } from "./transport/websocket.ts";
 import { situationFor } from "./domain/voice.ts";
 import { menuFor } from "./domain/menu.ts";
+import { Sessions } from "./domain/sessions.ts";
 import type { Snapshot } from "./domain/state.ts";
 
 // The socket is created first so the hub can publish into it, then attached to the
@@ -9,8 +10,10 @@ import type { Snapshot } from "./domain/state.ts";
 let socket: ReturnType<typeof attachWebSocket> | null = null;
 let previous: Snapshot | null = null;
 
+const sessions = new Sessions();
+
 const { server } = createHub(
-  undefined,
+  sessions,
   (snapshot) => {
     socket?.publish(snapshot);
     socket?.sendMenu(menuFor(snapshot));
@@ -21,9 +24,18 @@ const { server } = createHub(
     previous = snapshot;
   },
   (id) => {
-    // TODO(#13): focus the waiting agent's terminal. Logged for now so the popover is
-    // wired end to end and the next piece is a handler, not a rewrite.
-    console.log(`action: ${id}`);
+    if (!id.startsWith("focus:")) return;
+
+    const session = sessions.find(id.slice("focus:".length));
+    if (!session?.terminal) {
+      console.log(`focus: no terminal recorded for ${id}`);
+      return;
+    }
+
+    // The hub works out *which* terminal; the pet raises it. macOS won't grant Automation
+    // rights to a launchd agent — there's no GUI identity to attribute a prompt to, so it
+    // fails silently. The pet is a real app and can be asked properly.
+    socket?.focus(session.terminal);
   },
 );
 

@@ -1,5 +1,5 @@
 import { basename } from "node:path";
-import type { Event } from "./event.ts";
+import type { Event, Terminal } from "./event.ts";
 
 export type Status = "running" | "blocked" | "done" | "failed";
 
@@ -9,6 +9,8 @@ export type Session = {
   label: string; // the worktree name — how you actually think about which agent this is
   status: Status;
   since: number;
+  /// Remembered from whichever event carried it — later events may not.
+  terminal?: Terminal;
 };
 
 /** How long a finished session keeps showing before it stops being interesting. */
@@ -46,6 +48,7 @@ export class Sessions {
       // `since` tracks when this status began, so a session that stays blocked
       // keeps its original timestamp and we can tell how long you've been holding it up.
       since: existing?.status === status ? existing.since : e.ts,
+      terminal: e.terminal ?? existing?.terminal,
     });
   }
 
@@ -55,6 +58,10 @@ export class Sessions {
       const transient = s.status === "done" || s.status === "failed";
       if (transient && now - s.since > DONE_TTL_MS) this.byId.delete(id);
     }
+  }
+
+  find(id: string): Session | undefined {
+    return this.byId.get(id);
   }
 
   list(): Session[] {

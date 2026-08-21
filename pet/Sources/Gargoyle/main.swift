@@ -25,7 +25,10 @@ let connection = HubConnection(
   onMenu: { menu in
     latestMenu = menu
     creature.apply(latest, menu: menu)
-  }
+  },
+  // The hub decided which terminal; raising it has to happen here, because only a real
+  // app can be granted Automation permission.
+  onFocus: { app, term in TerminalFocus.raise(app: app, term: term) }
 )
 
 // Actions go straight back to the hub — the pet doesn't know what "focus:s3" means,

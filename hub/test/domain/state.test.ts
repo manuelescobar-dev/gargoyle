@@ -75,6 +75,17 @@ test("embers are labelled by worktree, which is how you think about them", () =>
   assert.equal(snapshot(s.list()).embers[0].label, "api-refactor");
 });
 
+test("a session remembers its terminal even when later events omit it", () => {
+  const s = new Sessions();
+  s.apply({
+    source: "claude-code", sessionId: "a", cwd: "/w/x", type: "started", ts: 1,
+    terminal: { app: "iTerm.app", term: "w1t0p0:UUID" },
+  });
+  s.apply({ source: "claude-code", sessionId: "a", cwd: "/w/x", type: "blocked", ts: 2 });
+
+  assert.equal(s.find("a")?.terminal?.term, "w1t0p0:UUID", "we still need to know where to jump");
+});
+
 test("mood climbs with load and saturates", () => {
   const s = new Sessions();
   assert.equal(snapshot(s.list()).mood, 0);

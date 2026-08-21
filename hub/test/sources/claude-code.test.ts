@@ -13,7 +13,18 @@ test("a real hook payload normalizes", () => {
     cwd: "/w/x",
     type: "blocked",
     ts: 1234,
+    terminal: undefined,
   });
+});
+
+test("the terminal the hook ran in comes through", () => {
+  const e = fromClaudeHook(
+    { hook_event_name: "Stop", session_id: "abc", cwd: "/w/x" },
+    1,
+    { app: "iTerm.app", term: "w1t0p0:UUID" },
+  );
+  assert.equal(e?.terminal?.app, "iTerm.app");
+  assert.equal(e?.terminal?.term, "w1t0p0:UUID");
 });
 
 // Every agent on the machine posts here. Anything unrecognised has to be survivable,

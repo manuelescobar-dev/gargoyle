@@ -87,3 +87,14 @@ func situationIsConsumed() {
   #expect(state.takeSituation() == "busy")
   #expect(state.takeSituation() == nil, "otherwise it would repeat itself forever")
 }
+
+@Test("a focus request is heard and handed over once")
+func focusRequestIsHeard() {
+  var state = HubState()
+  state.received(Data(#"{"t":"focus","app":"iTerm.app","term":"w1t0p0:UUID"}"#.utf8))
+
+  let request = state.takeFocusRequest()
+  #expect(request?.app == "iTerm.app")
+  #expect(request?.term == "w1t0p0:UUID")
+  #expect(state.takeFocusRequest() == nil, "a repeated raise would fight you for focus")
+}

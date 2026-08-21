@@ -31,7 +31,16 @@ export function createHub(
         // A malformed hook must never take the hub down — every agent on the
         // machine is feeding this endpoint.
         try {
-          const event = fromClaudeHook(JSON.parse(body));
+          // The hook runs inside the agent's own terminal, so it can tell us which one.
+          const header = (name: string) => {
+            const value = req.headers[name];
+            const text = Array.isArray(value) ? value[0] : value;
+            return text && text.length > 0 ? text : undefined;
+          };
+          const event = fromClaudeHook(JSON.parse(body), Date.now(), {
+            app: header("x-gargoyle-term-app"),
+            term: header("x-gargoyle-term"),
+          });
           if (event) {
             sessions.apply(event);
             eventsReceived++;

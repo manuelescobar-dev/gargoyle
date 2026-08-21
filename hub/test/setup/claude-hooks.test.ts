@@ -36,11 +36,31 @@ test("running it twice changes nothing", () => {
   assert.deepEqual(twice.added, [], "nothing to add the second time");
 });
 
-test("still idempotent after the port changes", () => {
-  const once = withGargoyleHooks({}).settings as any;
-  once.hooks.Notification[0].hooks[0].command = "curl localhost:9999/event # gargoyle";
+// Without this, changing the hook command ships to nobody: install sees the marker,
+// says "already wired", and leaves the old command in place forever.
+test("an out-of-date gargoyle hook is upgraded in place", () => {
+  const stale = {
+    hooks: {
+      Stop: [
+        { hooks: [{ type: "command", command: "echo mine" }] },
+        { hooks: [{ type: "command", command: "curl old-and-busted # gargoyle" }] },
+      ],
+    },
+  };
+  const { settings, upgraded } = withGargoyleHooks(stale);
 
-  assert.deepEqual(withGargoyleHooks(once).added, [], "the marker identifies ours, not the port");
+  const commands = commandsFor(settings, "Stop");
+  assert.ok(commands.includes("echo mine"), "still not our business");
+  assert.equal(commands.filter((c) => c.includes(GARGOYLE_MARKER)).length, 1, "replaced, not doubled");
+  assert.ok(!commands.some((c) => c.includes("old-and-busted")));
+  assert.ok(upgraded.includes("Stop"));
+});
+
+test("an already-current install changes nothing", () => {
+  const once = withGargoyleHooks({}).settings;
+  const twice = withGargoyleHooks(structuredClone(once));
+  assert.deepEqual(twice.added, []);
+  assert.deepEqual(twice.upgraded, []);
 });
 
 test("uninstall removes only ours", () => {

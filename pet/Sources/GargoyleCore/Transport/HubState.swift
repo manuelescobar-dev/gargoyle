@@ -14,7 +14,15 @@ public struct HubState: Sendable {
   /// out is its own kind of lie.
   public private(set) var menu: Menu = .empty
 
-  private struct Tagged: Decodable { let t: String?; let situation: String? }
+  private struct Tagged: Decodable {
+    let t: String?
+    let situation: String?
+    let app: String?
+    let term: String?
+  }
+
+  /// A terminal the hub wants raised, handed over once.
+  private var focusRequest: (app: String?, term: String?)?
 
   public init() {}
 
@@ -30,6 +38,11 @@ public struct HubState: Sendable {
     if tagged?.t == "bubble" {
       situation = tagged?.situation
       return false  // nothing about the world changed
+    }
+
+    if tagged?.t == "focus" {
+      focusRequest = (tagged?.app, tagged?.term)
+      return false
     }
 
     if tagged?.t == "menu" {
@@ -55,5 +68,11 @@ public struct HubState: Sendable {
   public mutating func takeSituation() -> String? {
     defer { situation = nil }
     return situation
+  }
+
+  /// Handed over exactly once — a repeated raise would fight the user for focus.
+  public mutating func takeFocusRequest() -> (app: String?, term: String?)? {
+    defer { focusRequest = nil }
+    return focusRequest
   }
 }

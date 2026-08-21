@@ -43,8 +43,15 @@ type HookEntry = { type: string; command: string };
 type HookGroup = { matcher?: string; hooks: HookEntry[] };
 type Settings = Record<string, unknown>;
 
+/**
+ * The hook runs inside the agent's own shell, so it already knows which terminal tab it's
+ * in — far more reliable than us guessing later from window titles. Sent as headers so the
+ * payload from Claude Code passes through untouched.
+ */
 const commandFor = (port: number) =>
-  `curl -s -m 2 -X POST http://127.0.0.1:${port}/event --data-binary @- ${GARGOYLE_MARKER}`;
+  "curl -s -m 2 -X POST " +
+  `-H "X-Gargoyle-Term: $TERM_SESSION_ID" -H "X-Gargoyle-Term-App: $TERM_PROGRAM" ` +
+  `http://127.0.0.1:${port}/event --data-binary @- ${GARGOYLE_MARKER}`;
 
 /** Identified by the marker, not by the URL — so changing the port doesn't orphan an install. */
 const isOurs = (hook: HookEntry) =>
@@ -59,6 +66,8 @@ export function withGargoyleHooks(input: Settings, port = HUB_PORT) {
 
   const added: string[] = [];
   const alreadyPresent: string[] = [];
+  const upgraded: string[] = [];
+  const current = commandFor(port);
 
   const wanted: [string, string | undefined][] = [
     ...HOOK_EVENTS.map((e) => [e, undefined] as [string, undefined]),
@@ -69,20 +78,31 @@ export function withGargoyleHooks(input: Settings, port = HUB_PORT) {
     const existing = groupsFor(settings, event);
 
     if (existing.some((group) => (group.hooks ?? []).some(isOurs))) {
-      alreadyPresent.push(event);
-      hooks[event] = existing;
+      // Ours is already here — but it may be an older command. Rewrite it in place,
+      // otherwise every change we ever make to the hook reaches nobody.
+      let changed = false;
+      hooks[event] = existing.map((group) => ({
+        ...group,
+        hooks: (group.hooks ?? []).map((hook) => {
+          if (!isOurs(hook) || hook.command === current) return hook;
+          changed = true;
+          return { ...hook, command: current };
+        }),
+      }));
+
+      (changed ? upgraded : alreadyPresent).push(event);
       continue;
     }
 
     // Appended, never substituted. Someone else's hooks are none of our business.
-    const group: HookGroup = { hooks: [{ type: "command", command: commandFor(port) }] };
+    const group: HookGroup = { hooks: [{ type: "command", command: current }] };
     if (matcher) group.matcher = matcher;
 
     hooks[event] = [...existing, group];
     added.push(event);
   }
 
-  return { settings, added, alreadyPresent };
+  return { settings, added, alreadyPresent, upgraded };
 }
 
 export function withoutGargoyleHooks(input: Settings): Settings {

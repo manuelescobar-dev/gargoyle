@@ -65,10 +65,11 @@ async function reachable(path: string): Promise<Response | null> {
 
 switch (process.argv[2]) {
   case "install": {
-    const { settings, added, alreadyPresent } = withGargoyleHooks(readSettings());
+    const { settings, added, alreadyPresent, upgraded } = withGargoyleHooks(readSettings());
     writeSettings(settings);
     if (added.length) console.log(`✓ wired Claude Code hooks: ${added.join(", ")}`);
-    if (alreadyPresent.length) console.log(`· already wired: ${alreadyPresent.join(", ")}`);
+    if (upgraded.length) console.log(`✓ updated existing hooks: ${upgraded.join(", ")}`);
+    if (alreadyPresent.length) console.log(`· already current: ${alreadyPresent.join(", ")}`);
 
     mkdirSync(agentsDir, { recursive: true });
     mkdirSync(logDir, { recursive: true });

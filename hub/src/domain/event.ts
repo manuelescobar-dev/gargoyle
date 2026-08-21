@@ -11,6 +11,11 @@ export type Event = {
   cwd: string;
   type: EventType;
   ts: number;
+  /// Where this session is running, when the source can tell us.
+  terminal?: Terminal;
 };
+
+/** Enough to raise the window a session lives in. */
+export type Terminal = { app?: string; term?: string };
 
 export type EventType = "started" | "active" | "blocked" | "finished" | "failed" | "ended";

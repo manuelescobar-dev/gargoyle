@@ -17,3 +17,4 @@ what replaced it. A reversed decision with its reasoning intact is worth more th
 | [0004](0004-openclaw-is-optional.md) | OpenClaw is an optional integration |
 | [0005](0005-a-surface-not-a-suite.md) | No verticals, ever |
 | [0006](0006-hook-mapping.md) | What each Claude Code hook actually means |
+| [0007](0007-who-can-ask-for-permission.md) | Actions that touch other apps run in the pet |

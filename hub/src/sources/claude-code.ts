@@ -1,4 +1,4 @@
-import type { Event, EventType } from "../domain/event.ts";
+import type { Event, EventType, Terminal } from "../domain/event.ts";
 
 /**
  * Claude Code sends a hook payload on stdin; a one-line curl forwards it to POST /event.
@@ -32,7 +32,11 @@ const HOOK_TYPES: Record<string, EventType> = {
  * Returns null for anything we don't recognise rather than throwing — an unknown
  * hook name is a Claude Code version we haven't seen, not a reason to take the hub down.
  */
-export function fromClaudeHook(payload: unknown, now = Date.now()): Event | null {
+export function fromClaudeHook(
+  payload: unknown,
+  now = Date.now(),
+  terminal?: Terminal,
+): Event | null {
   if (typeof payload !== "object" || payload === null) return null;
   const p = payload as Record<string, unknown>;
 
@@ -48,5 +52,6 @@ export function fromClaudeHook(payload: unknown, now = Date.now()): Event | null
     cwd: typeof p.cwd === "string" ? p.cwd : "",
     type,
     ts: now,
+    terminal,
   };
 }

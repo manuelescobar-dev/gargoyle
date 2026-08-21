@@ -10,6 +10,7 @@ public final class HubConnection {
   private let onChange: (Snapshot?) -> Void
   private let onSay: (String) -> Void
   private let onMenu: (Menu) -> Void
+  private let onFocus: (String?, String?) -> Void
   private var everConnected = false
   private var state = HubState()
   private var task: URLSessionWebSocketTask?
@@ -24,12 +25,14 @@ public final class HubConnection {
     port: Int = 7373,
     onChange: @escaping (Snapshot?) -> Void,
     onSay: @escaping (String) -> Void = { _ in },
-    onMenu: @escaping (Menu) -> Void = { _ in }
+    onMenu: @escaping (Menu) -> Void = { _ in },
+    onFocus: @escaping (String?, String?) -> Void = { _, _ in }
   ) {
     url = URL(string: "ws://\(host):\(port)/socket")!
     self.onChange = onChange
     self.onSay = onSay
     self.onMenu = onMenu
+    self.onFocus = onFocus
   }
 
   public func start() {
@@ -40,6 +43,7 @@ public final class HubConnection {
   }
 
   private func connect() {
+    Trace.log("connecting to \(url)")
     let task = URLSession.shared.webSocketTask(with: url)
     self.task = task
     task.resume()
@@ -60,12 +64,16 @@ public final class HubConnection {
           }
 
           guard let data else { continue }
+          Trace.log("recv: \(String(decoding: data.prefix(120), as: UTF8.self))")
           let changed = self.state.received(data)
           self.retryDelay = .milliseconds(250)  // any good frame means we're healthy again
 
           if changed { self.onChange(self.state.latest) }
           self.onMenu(self.state.menu)
           if let situation = self.state.takeSituation() { self.onSay(situation) }
+          if let request = self.state.takeFocusRequest() {
+            self.onFocus(request.app, request.term)
+          }
 
           // Coming back after being away is the one moment it greets you unprompted.
           if !self.everConnected {
@@ -74,6 +82,7 @@ public final class HubConnection {
           }
         }
       } catch {
+        Trace.log("socket dropped: \(error)")
         await self?.dropped()
       }
     }

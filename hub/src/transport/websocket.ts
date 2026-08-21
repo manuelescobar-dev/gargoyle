@@ -41,6 +41,10 @@ export function attachWebSocket(server: Server) {
     /// A situation key, not words. The creature's persona decides what that sounds like,
     /// so swapping the creature swaps the voice.
     speak: (situation: string) => sendAll(JSON.stringify({ t: "bubble", situation })),
+    /// Asks the pet to raise a terminal. It's the surface's job because only a real app
+    /// can be granted Automation permission.
+    focus: (terminal: { app?: string; term?: string }) =>
+      sendAll(JSON.stringify({ t: "focus", ...terminal })),
     sendMenu: (items: Array<{ id: string; label: string }>) => {
       const payload = JSON.stringify({ t: "menu", items });
       if (payload === lastMenu) return;  // an unchanged menu is not worth a frame
