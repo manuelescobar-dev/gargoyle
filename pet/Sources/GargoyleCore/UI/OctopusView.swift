@@ -16,17 +16,19 @@ public final class OctopusView: CreatureView {
     didSet { needsDisplay = true }
   }
 
-  private var mantleRadius: Double { min(bounds.width, bounds.height) * 0.125 }
-  /// Arms hang from under the mantle, not from its middle.
-  private var center: CGPoint { CGPoint(x: bounds.midX, y: bounds.midY + mantleRadius * 0.2) }
+  private var mantleRadius: Double { min(bounds.width, bounds.height) * 0.20 }
+  /// The head sits high; big head, small body is most of what makes a thing read as cute.
+  private var headCenter: CGPoint { CGPoint(x: bounds.midX, y: bounds.midY + mantleRadius * 0.55) }
+  /// Arms emerge from under the head, not from inside it.
+  private var center: CGPoint { CGPoint(x: bounds.midX, y: headCenter.y - mantleRadius * 0.5) }
 
   // Calm slate → warm and busy. Real octopuses signal with colour, so the palette is the
   // animal doing what it does rather than a status light bolted to its side.
   private func skin(_ mood: Double, vitality: Double) -> NSColor {
     NSColor(
-      calibratedHue: 0.60 - mood * 0.52,
-      saturation: (0.28 + mood * 0.34) * vitality,
-      brightness: 0.62 + mood * 0.20 + (1 - vitality) * 0.18,
+      calibratedHue: 0.52 - mood * 0.44,
+      saturation: (0.42 + mood * 0.24) * vitality,
+      brightness: 0.86 - mood * 0.06 + (1 - vitality) * 0.06,
       alpha: 1
     )
   }
@@ -36,27 +38,30 @@ public final class OctopusView: CreatureView {
     let mood = pose.mantleSquash
     let color = skin(mood, vitality: pose.vitality)
     let r = mantleRadius
-    let breathe = 1 + sin(breath) * 0.03
+    let breathe = 1 + sin(breath) * 0.035
 
     for arm in pose.arms { draw(arm, from: center, radius: r, color: color, in: context) }
 
-    // Mantle last, so the arms tuck behind it.
-    let squash = 1 - pose.mantleSquash * 0.22
-    let mantle = CGRect(
-      x: center.x - r * breathe, y: center.y - r * squash * breathe,
-      width: r * 2 * breathe, height: r * 2 * squash * breathe
+    // Head last, so the arms tuck behind it.
+    let squash = 1 - pose.mantleSquash * 0.16
+    let head = CGRect(
+      x: headCenter.x - r * breathe,
+      y: headCenter.y - r * squash * breathe,
+      width: r * 2 * breathe,
+      height: r * 2 * squash * breathe
     )
     context.setFillColor(color.cgColor)
-    context.fillEllipse(in: mantle)
+    context.fillEllipse(in: head)
 
-    drawEye(in: mantle, context: context)
+    drawEyes(in: head, context: context)
+    drawMouth(in: head, context: context)
   }
 
   private func draw(
     _ arm: OctopusPose.Arm, from origin: CGPoint, radius r: Double,
     color: NSColor, in context: CGContext
   ) {
-    let length = r * 3.5 * arm.reach
+    let length = r * 2.1 * arm.reach
     let tip = CGPoint(
       x: origin.x + cos(arm.baseAngle) * length,
       y: origin.y + sin(arm.baseAngle) * length
@@ -70,10 +75,15 @@ public final class OctopusView: CreatureView {
 
     // Filled and tapered rather than stroked. A uniform-width line reads as a stub;
     // thick at the shoulder thinning to a point is what makes it an arm.
+    let baseWidth = r * (arm.isPresenting ? 0.62 : 0.58)
     context.setFillColor(color.cgColor)
-    context.addPath(taperedArm(from: origin, control: control, to: tip,
-                               baseWidth: r * (arm.isPresenting ? 0.78 : 0.66)))
+    context.addPath(taperedArm(from: origin, control: control, to: tip, baseWidth: baseWidth))
     context.fillPath()
+
+    // Filled separately: an ellipse added to the same path winds the opposite way, and
+    // non-zero winding then punches a hole in the arm instead of rounding it off.
+    let cap = baseWidth * 0.70 / 2
+    context.fillEllipse(in: CGRect(x: tip.x - cap, y: tip.y - cap, width: cap * 2, height: cap * 2))
 
     if arm.holdsEmber { drawEmber(at: tip, radius: r, urgent: arm.isPresenting, in: context) }
   }
@@ -99,7 +109,7 @@ public final class OctopusView: CreatureView {
       let len = max(hypot(dx, dy), 0.0001)
       let nx = -dy / len, ny = dx / len
 
-      let width = baseWidth * pow(1 - t, 0.85) / 2
+      let width = baseWidth * (1 - t * 0.30) / 2
       left.append(CGPoint(x: point.x + nx * width, y: point.y + ny * width))
       right.append(CGPoint(x: point.x - nx * width, y: point.y - ny * width))
     }
@@ -124,24 +134,77 @@ public final class OctopusView: CreatureView {
     context.setShadow(offset: .zero, blur: 0, color: nil)
   }
 
-  private func drawEye(in mantle: CGRect, context: CGContext) {
-    guard pose.eyeOpen > 0.02 else { return }
-    let w = mantle.width * 0.30
-    let h = w * pose.eyeOpen
-    let origin = CGPoint(x: mantle.midX - w / 2, y: mantle.midY + mantle.height * 0.06 - h / 2)
+  /// Two eyes, wide-set and low. One eye reads as a cyclops; two low ones read as a face
+  /// you'd want on your desk. Big relative to the head, which is the other half of the trick.
+  private func drawEyes(in head: CGRect, context: CGContext) {
+    guard pose.eyeOpen > 0.02 else {
+      drawClosedEyes(in: head, context: context)
+      return
+    }
 
-    context.setFillColor(NSColor(calibratedWhite: 0.97, alpha: 1).cgColor)
-    context.fillEllipse(in: CGRect(x: origin.x, y: origin.y, width: w, height: h))
+    let w = head.width * 0.27
+    let h = w * 1.06 * pose.eyeOpen
+    let spacing = head.width * 0.20
+    let y = head.midY - head.height * 0.06
 
-    guard pose.eyeOpen > 0.4 else { return }
-    let pupilSize = w * 0.44
-    context.setFillColor(NSColor(calibratedWhite: 0.09, alpha: 1).cgColor)
-    context.fillEllipse(
-      in: CGRect(
-        x: origin.x + w / 2 - pupilSize / 2 + pose.pupil.x * (w - pupilSize) / 2,
-        y: origin.y + h / 2 - pupilSize / 2 + pose.pupil.y * (h - pupilSize) / 2,
-        width: pupilSize, height: pupilSize
+    for side in [-1.0, 1.0] {
+      let cx = head.midX + spacing * side
+      context.setFillColor(NSColor(calibratedWhite: 0.99, alpha: 1).cgColor)
+      context.fillEllipse(in: CGRect(x: cx - w / 2, y: y - h / 2, width: w, height: h))
+
+      guard pose.eyeOpen > 0.35 else { continue }
+      let pupil = w * 0.52
+      let px = cx + pose.pupil.x * (w - pupil) * 0.45
+      let py = y + pose.pupil.y * (h - pupil) * 0.45
+      context.setFillColor(NSColor(calibratedWhite: 0.11, alpha: 1).cgColor)
+      context.fillEllipse(in: CGRect(x: px - pupil / 2, y: py - pupil / 2, width: pupil, height: pupil))
+
+      // A catchlight. Two small white dots are most of what makes eyes look alive.
+      let glint = pupil * 0.34
+      context.setFillColor(NSColor(calibratedWhite: 1, alpha: 0.95).cgColor)
+      context.fillEllipse(
+        in: CGRect(x: px - pupil * 0.06, y: py + pupil * 0.12, width: glint, height: glint)
       )
+    }
+  }
+
+  /// A small smile. Cheap, and it's the difference between a creature that tolerates you
+  /// and one that's pleased you're there.
+  private func drawMouth(in head: CGRect, context: CGContext) {
+    guard pose.eyeOpen > 0.35 else { return }
+    let w = head.width * 0.17
+    let y = head.midY - head.height * 0.32
+    let droop = pose.vitality < 0.5  // when it doesn't know, it isn't smiling
+
+    let path = CGMutablePath()
+    path.move(to: CGPoint(x: head.midX - w / 2, y: y))
+    path.addQuadCurve(
+      to: CGPoint(x: head.midX + w / 2, y: y),
+      control: CGPoint(x: head.midX, y: y + (droop ? w * 0.5 : -w * 0.55))
     )
+    context.setStrokeColor(NSColor(calibratedWhite: 0.22, alpha: 0.55).cgColor)
+    context.setLineWidth(max(1.1, head.width * 0.028))
+    context.setLineCap(.round)
+    context.addPath(path)
+    context.strokePath()
+  }
+
+  /// Asleep: two soft downward arcs rather than a blank face.
+  private func drawClosedEyes(in head: CGRect, context: CGContext) {
+    let w = head.width * 0.22
+    let spacing = head.width * 0.20
+    let y = head.midY - head.height * 0.04
+
+    context.setStrokeColor(NSColor(calibratedWhite: 0.28, alpha: 0.75).cgColor)
+    context.setLineWidth(max(1.2, head.width * 0.035))
+    context.setLineCap(.round)
+    for side in [-1.0, 1.0] {
+      let cx = head.midX + spacing * side
+      let path = CGMutablePath()
+      path.move(to: CGPoint(x: cx - w / 2, y: y))
+      path.addQuadCurve(to: CGPoint(x: cx + w / 2, y: y), control: CGPoint(x: cx, y: y - w * 0.42))
+      context.addPath(path)
+    }
+    context.strokePath()
   }
 }

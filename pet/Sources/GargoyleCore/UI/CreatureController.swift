@@ -6,13 +6,20 @@ public final class CreatureController {
   private let panel = CreaturePanel()
   private let view: OctopusView
   private var inputs = CreatureInputs.from(nil)
-  private var breath: Double = 0
+  private var life = Liveliness()
+  private var settled: OctopusPose
+  private var clock: Double = 0
   private var link: CADisplayLink?
+
+  /// How fast it settles into a new pose. Slow enough to read as movement, quick enough
+  /// that a blocked agent doesn't feel delayed.
+  private static let easing = 0.14
 
   /// How far away the cursor can be and still be worth looking at.
   private static let gazeReach: Double = 600
 
   public init() {
+    settled = .from(CreatureInputs.from(nil))
     view = OctopusView(frame: panel.contentLayoutRect)
     view.autoresizingMask = [.width, .height]
     panel.contentView = view
@@ -48,7 +55,10 @@ public final class CreatureController {
     current.gazeX = gaze.x
     current.gazeY = gaze.y
 
-    view.pose = .from(current)
+    // Settle toward the new pose rather than cutting to it, then lay the small motions
+    // on top. States that snap are the tell that something is a sprite.
+    settled = .lerp(settled, .from(current), Self.easing)
+    view.pose = settled.animated(by: life.advance(to: clock))
     // Clicks land on the creature; everywhere else they pass through to your work.
     view.opaqueRegion = view.bounds.insetBy(dx: view.bounds.width * 0.12, dy: view.bounds.height * 0.12)
   }
@@ -63,8 +73,8 @@ public final class CreatureController {
   @objc private func tick() {
     // Asleep or hidden behind something is genuinely zero work — no frames, no gaze polling.
     guard inputs.state != 0, panel.occlusionState.contains(.visible) else { return }
-    breath += 0.045
-    view.breath = breath
+    clock += 1.0 / 60
+    view.breath = clock * 1.05
     refresh()
   }
 }

@@ -33,7 +33,7 @@ public struct OctopusPose: Equatable, Sendable {
 
   private static let armCount = 8
   /// Arms fan across the lower half, the way one hangs off a ledge.
-  private static let arc = (start: Double.pi * 1.08, sweep: Double.pi * 0.84)
+  private static let arc = (start: Double.pi * 1.02, sweep: Double.pi * 0.96)
 
   public static func from(_ inputs: CreatureInputs) -> OctopusPose {
     let state = inputs.state
@@ -43,6 +43,15 @@ public struct OctopusPose: Equatable, Sendable {
 
     // Central, so the arm that asks for you is the most visible one it has.
     let presentingIndex = inputs.blocked > 0 ? armCount / 2 : -1
+
+    // Arms nearest the middle take embers first. Filling left-to-right made three agents
+    // look like a creature listing to one side.
+    let middle = Double(armCount - 1) / 2
+    let carrying = Set(
+      (0..<armCount)
+        .sorted { abs(Double($0) - middle) < abs(Double($1) - middle) }
+        .prefix(holding)
+    )
 
     let baseReach: Double =
       asleep ? 0.34
@@ -61,7 +70,7 @@ public struct OctopusPose: Equatable, Sendable {
 
       // Outer arms sit shorter than the middle ones, which is what makes a fan read as
       // a fan rather than a rake. The ripple keeps it off a perfect curve.
-      let fan = 1 - pow(abs(t - 0.5) * 2, 2) * 0.28
+      let fan = 1 - pow(abs(t - 0.5) * 2, 2) * 0.18
       let ripple = sin(Double(i) * 1.7) * 0.05
 
       // When we don't know, the arms fall slack toward vertical instead of fanning out.
@@ -79,9 +88,9 @@ public struct OctopusPose: Equatable, Sendable {
         reach: presenting ? baseReach * 1.55 : baseReach * fan + ripple,
         // Curls away from the middle, so the arms open like an umbrella instead of
         // alternating and crossing into loops. Magnitude grows toward the outside.
-        curl: (t < 0.5 ? -1 : 1) * (abs(t - 0.5) * 2) * (unknown ? 0.42 : 0.20 + inputs.mood * 0.16),
+        curl: (t < 0.5 ? -1 : 1) * (abs(t - 0.5) * 2) * (unknown ? 0.30 : 0.10 + inputs.mood * 0.10),
         // The asking arm always has one: it is, by definition, holding a light out to you.
-        holdsEmber: i < holding || presenting,
+        holdsEmber: carrying.contains(i) || presenting,
         isPresenting: presenting
       )
     }
@@ -92,6 +101,65 @@ public struct OctopusPose: Equatable, Sendable {
       pupil: asleep ? .zero : CGPoint(x: inputs.gazeX * 0.7, y: inputs.gazeY * 0.7),
       eyeOpen: asleep ? 0.05 : unknown ? 0.55 : 1.0,
       vitality: unknown ? 0.22 : asleep ? 0.6 : 1.0
+    )
+  }
+}
+
+extension OctopusPose {
+  /// Eases between two poses so states settle rather than cut. Blending is most of what
+  /// separates an animation from a slideshow.
+  ///
+  /// Only continuous things are blended. Whether an arm *holds* an ember is a fact about
+  /// the world, and a half-held ember would be the creature inventing a state.
+  public static func lerp(_ a: OctopusPose, _ b: OctopusPose, _ t: Double) -> OctopusPose {
+    if t <= 0 { return a }
+    if t >= 1 { return b }
+    let mix = { (x: Double, y: Double) in x + (y - x) * t }
+
+    let arms = zip(a.arms, b.arms).map { from, to in
+      Arm(
+        baseAngle: mix(from.baseAngle, to.baseAngle),
+        reach: mix(from.reach, to.reach),
+        curl: mix(from.curl, to.curl),
+        holdsEmber: to.holdsEmber,
+        isPresenting: to.isPresenting
+      )
+    }
+
+    return OctopusPose(
+      arms: arms,
+      mantleSquash: mix(a.mantleSquash, b.mantleSquash),
+      pupil: CGPoint(x: mix(a.pupil.x, b.pupil.x), y: mix(a.pupil.y, b.pupil.y)),
+      eyeOpen: mix(a.eyeOpen, b.eyeOpen),
+      vitality: mix(a.vitality, b.vitality)
+    )
+  }
+}
+
+extension OctopusPose {
+  /// Applies the moment-to-moment motion: blink, arm drift, and the beckon on the
+  /// asking arm. Pure, so what the creature *is* stays separate from how it's moving.
+  public func animated(by frame: Liveliness.Frame) -> OctopusPose {
+    let arms = self.arms.enumerated().map { index, arm in
+      let drift = frame.sway(arm: index)
+      // Only the asking arm beckons — everything else would read as agitation.
+      let beckon = arm.isPresenting ? frame.presentingWave * 0.07 : 0
+      return Arm(
+        baseAngle: arm.baseAngle + drift * 0.5 + beckon,
+        reach: arm.reach * (1 + drift),
+        curl: arm.curl + beckon * 0.4,
+        holdsEmber: arm.holdsEmber,
+        isPresenting: arm.isPresenting
+      )
+    }
+
+    return OctopusPose(
+      arms: arms,
+      mantleSquash: mantleSquash,
+      pupil: pupil,
+      // Blinking never reopens eyes the state says are shut.
+      eyeOpen: eyeOpen * frame.eyeOpen,
+      vitality: vitality
     )
   }
 }
