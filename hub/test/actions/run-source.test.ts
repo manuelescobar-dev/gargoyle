@@ -19,7 +19,10 @@ test("a source with nothing to say says nothing", async () => {
 // Sources are shell scripts people wrote in a hurry. None of these may take the hub down.
 test("junk lines are skipped, good ones still land", async () => {
   const out = await runSource(`printf 'not json\\n{"id":"ok","status":"done"}\\n\\n<html>\\n'`);
-  assert.deepEqual(out.embers.map((e) => e.id), ["ok"]);
+  assert.deepEqual(
+    out.embers.map((e) => e.id),
+    ["ok"],
+  );
 });
 
 test("a failing command is reported, not thrown", async () => {
@@ -41,6 +44,11 @@ test("a hanging command is cut off", async () => {
 });
 
 test("a torrent of output is truncated rather than swallowing memory", async () => {
-  const out = await runSource(`for i in $(seq 1 5000); do echo '{"id":"x'$i'","status":"done"}'; done`);
-  assert.ok(out.embers.length <= 100, `got ${out.embers.length} — a source shouldn't be able to flood the creature`);
+  const out = await runSource(
+    `for i in $(seq 1 5000); do echo '{"id":"x'$i'","status":"done"}'; done`,
+  );
+  assert.ok(
+    out.embers.length <= 100,
+    `got ${out.embers.length} — a source shouldn't be able to flood the creature`,
+  );
 });

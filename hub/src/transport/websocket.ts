@@ -10,10 +10,7 @@ import { Broadcaster } from "./broadcast.ts";
  * makes `unknown` honest — a dropped socket is immediate and unambiguous, where a
  * missed poll is just a pause.
  */
-export function attachWebSocket(
-  server: Server,
-  options: { onLastClientGone?: () => void } = {},
-) {
+export function attachWebSocket(server: Server, options: { onLastClientGone?: () => void } = {}) {
   const clients = new Set<import("ws").WebSocket>();
   const broadcaster = new Broadcaster((payload) => {
     for (const client of clients) {
@@ -65,7 +62,7 @@ export function attachWebSocket(
       sendAll(JSON.stringify({ t: "focus", ...terminal })),
     sendMenu: (items: Array<{ id: string; label: string }>) => {
       const payload = JSON.stringify({ t: "menu", items });
-      if (payload === lastMenu) return;  // an unchanged menu is not worth a frame
+      if (payload === lastMenu) return; // an unchanged menu is not worth a frame
       lastMenu = payload;
       sendAll(payload);
     },

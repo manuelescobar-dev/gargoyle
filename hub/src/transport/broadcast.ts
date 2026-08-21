@@ -29,6 +29,8 @@ export class Broadcaster {
 
   /** A pet that connects mid-silence must not wait for the next change to learn anything. */
   greet(send: Send): void {
-    send(this.last ?? JSON.stringify({ t: "state", state: "idle", embers: [], mood: 0, blocked: 0 }));
+    send(
+      this.last ?? JSON.stringify({ t: "state", state: "idle", embers: [], mood: 0, blocked: 0 }),
+    );
   }
 }

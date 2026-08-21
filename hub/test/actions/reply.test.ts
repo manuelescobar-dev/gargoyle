@@ -22,7 +22,11 @@ test("shell metacharacters in an answer stay data", async () => {
   deliverReply(`cat > ${out}`, '"; rm -rf ~; echo "');
   await settle();
 
-  assert.equal(readFileSync(out, "utf8"), '"; rm -rf ~; echo "', "delivered verbatim, run as nothing");
+  assert.equal(
+    readFileSync(out, "utf8"),
+    '"; rm -rf ~; echo "',
+    "delivered verbatim, run as nothing",
+  );
   rmSync(out, { force: true });
 });
 

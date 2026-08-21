@@ -49,7 +49,9 @@ export function diagnose(checks: Checks): { ok: boolean; lines: string[] } {
   } else if (checks.hubUp && checks.hooksWired) {
     // The nastiest state: everything looks installed, so you assume it works, and
     // nothing has ever arrived. Silence must not read as health.
-    lines.push("✗ no events have arrived yet — run an agent, or check the hooks point at this port");
+    lines.push(
+      "✗ no events have arrived yet — run an agent, or check the hooks point at this port",
+    );
     ok = false;
   } else {
     lines.push("· no events yet");

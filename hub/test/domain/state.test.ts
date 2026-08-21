@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { fromClaudeHook } from "../../src/sources/claude-code.ts";
 import { DONE_TTL_MS, Sessions } from "../../src/domain/sessions.ts";
 import { snapshot } from "../../src/domain/state.ts";
+import { fromClaudeHook } from "../../src/sources/claude-code.ts";
 
 /** Builds a Claude Code hook payload the way the real hook sends it. */
 const hook = (name: string, id: string, cwd = "/w/api-refactor") => ({
@@ -77,14 +77,25 @@ test("embers are labelled by worktree, which is how you think about them", () =>
 
 test("a generic source keeps the name it gave itself", () => {
   const s = new Sessions();
-  s.apply({ source: "ci", sessionId: "build", cwd: "", type: "active", ts: 1, label: "nightly build" });
+  s.apply({
+    source: "ci",
+    sessionId: "build",
+    cwd: "",
+    type: "active",
+    ts: 1,
+    label: "nightly build",
+  });
   assert.equal(s.list()[0].label, "nightly build");
 });
 
 test("a session remembers its terminal even when later events omit it", () => {
   const s = new Sessions();
   s.apply({
-    source: "claude-code", sessionId: "a", cwd: "/w/x", type: "started", ts: 1,
+    source: "claude-code",
+    sessionId: "a",
+    cwd: "/w/x",
+    type: "started",
+    ts: 1,
     terminal: { app: "iTerm.app", term: "w1t0p0:UUID" },
   });
   s.apply({ source: "claude-code", sessionId: "a", cwd: "/w/x", type: "blocked", ts: 2 });

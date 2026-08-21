@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
-import { fromGeneric } from "../sources/generic.ts";
 import type { Event } from "../domain/event.ts";
+import { fromGeneric } from "../sources/generic.ts";
 
 export type SourceOutput = {
   embers: Array<{ id: string; event: Event }>;
@@ -44,9 +44,10 @@ export function runSource(command: string, timeoutMs = 20_000): Promise<SourceOu
           if (typeof p.text === "string" && p.text.trim()) {
             nudges.push({
               text: p.text.slice(0, 280),
-              replyTo: typeof (p.reply_to ?? p.replyTo) === "string"
-                ? String(p.reply_to ?? p.replyTo)
-                : undefined,
+              replyTo:
+                typeof (p.reply_to ?? p.replyTo) === "string"
+                  ? String(p.reply_to ?? p.replyTo)
+                  : undefined,
               expiresInMs: typeof p.expires_in_ms === "number" ? p.expires_in_ms : undefined,
             });
             continue;

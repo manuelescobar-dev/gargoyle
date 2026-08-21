@@ -24,9 +24,15 @@ test("a broken source is skipped and named", () => {
     ],
   });
 
-  assert.deepEqual(sources.map((s) => s.run), ["good"]);
+  assert.deepEqual(
+    sources.map((s) => s.run),
+    ["good"],
+  );
   assert.equal(problems.length, 3);
-  assert.ok(problems.some((p) => p.includes("soon")), "should say what it couldn't read");
+  assert.ok(
+    problems.some((p) => p.includes("soon")),
+    "should say what it couldn't read",
+  );
 });
 
 test("no config at all is fine — most people won't have one", () => {

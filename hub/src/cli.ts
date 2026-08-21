@@ -11,9 +11,9 @@ import {
 import { homedir, userInfo } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { AGENT_LABEL, PET_LABEL, petPlistFor, plistFor } from "./setup/launch-agent.ts";
-import { type Checks, diagnose } from "./setup/doctor.ts";
 import { HUB_PORT, withGargoyleHooks, withoutGargoyleHooks } from "./setup/claude-hooks.ts";
+import { type Checks, diagnose } from "./setup/doctor.ts";
+import { AGENT_LABEL, PET_LABEL, petPlistFor, plistFor } from "./setup/launch-agent.ts";
 
 // Everything resolves from where this repo actually lives and where this user's
 // home actually is. Nothing is baked in. The env vars exist so the installer can
@@ -27,7 +27,11 @@ const petPlistPath = join(agentsDir, `${PET_LABEL}.plist`);
 /// Installed out of the repo, so moving or deleting the checkout doesn't take the
 /// creature with it.
 const installedApp = join(home, "Applications", "Gargoyle.app");
-const builtApp = join(dirname(dirname(dirname(fileURLToPath(import.meta.url)))), "pet", "Gargoyle.app");
+const builtApp = join(
+  dirname(dirname(dirname(fileURLToPath(import.meta.url)))),
+  "pet",
+  "Gargoyle.app",
+);
 const logDir = join(home, "Library", "Logs", "gargoyle");
 const hubScript = join(dirname(fileURLToPath(import.meta.url)), "index.ts");
 
@@ -157,7 +161,9 @@ switch (process.argv[2]) {
 
     const { ok, lines } = diagnose(checks);
     for (const line of lines) console.log(line);
+    // `process.exit` ends things, but the linter can't know that.
     process.exit(ok ? 0 : 1);
+    break;
   }
 
   default:

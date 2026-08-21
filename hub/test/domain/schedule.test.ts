@@ -23,7 +23,10 @@ test("an absurdly short interval is refused", () => {
 const source = { run: "x", everyMs: 60_000 };
 
 test("something never run is due immediately", () => {
-  assert.equal(dueNow(source, { now: 1000, lastRunAt: undefined, running: false, busy: false }), true);
+  assert.equal(
+    dueNow(source, { now: 1000, lastRunAt: undefined, running: false, busy: false }),
+    true,
+  );
 });
 
 test("it waits out its interval", () => {

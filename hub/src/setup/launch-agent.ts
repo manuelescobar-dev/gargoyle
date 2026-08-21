@@ -16,7 +16,11 @@ export function plistFor({
   node,
   script,
   logDir,
-}: { node: string; script: string; logDir: string }): string {
+}: {
+  node: string;
+  script: string;
+  logDir: string;
+}): string {
   return agentPlist({ label: AGENT_LABEL, args: [node, script], logDir, name: "hub" });
 }
 
@@ -35,7 +39,12 @@ function agentPlist({
   args,
   logDir,
   name,
-}: { label: string; args: string[]; logDir: string; name: string }): string {
+}: {
+  label: string;
+  args: string[];
+  logDir: string;
+  name: string;
+}): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">

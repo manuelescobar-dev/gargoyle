@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { GARGOYLE_MARKER, withGargoyleHooks, withoutGargoyleHooks } from "../../src/setup/claude-hooks.ts";
+import {
+  GARGOYLE_MARKER,
+  withGargoyleHooks,
+  withoutGargoyleHooks,
+} from "../../src/setup/claude-hooks.ts";
 
 const commandsFor = (s: Record<string, any>, event: string): string[] =>
   (s.hooks?.[event] ?? []).flatMap((g: any) => g.hooks.map((h: any) => h.command));
@@ -35,7 +39,9 @@ test("the permission hook waits longer, and is bounded twice over", () => {
   const group = settings.hooks.PermissionRequest[0];
   const command = group.hooks[0].command as string;
 
-  const curlSeconds = Number(command.match(/-m (\d+)/)![1]);
+  const matched = command.match(/-m (\d+)/);
+  assert.ok(matched, "the permission hook should carry an explicit curl timeout");
+  const curlSeconds = Number(matched[1]);
   assert.ok(curlSeconds > 5, "two seconds is shorter than a person");
   assert.ok(
     curlSeconds < group.hooks[0].timeout,
@@ -75,7 +81,11 @@ test("an out-of-date gargoyle hook is upgraded in place", () => {
 
   const commands = commandsFor(settings, "Stop");
   assert.ok(commands.includes("echo mine"), "still not our business");
-  assert.equal(commands.filter((c) => c.includes(GARGOYLE_MARKER)).length, 1, "replaced, not doubled");
+  assert.equal(
+    commands.filter((c) => c.includes(GARGOYLE_MARKER)).length,
+    1,
+    "replaced, not doubled",
+  );
   assert.ok(!commands.some((c) => c.includes("old-and-busted")));
   assert.ok(upgraded.includes("Stop"));
 });
@@ -96,7 +106,10 @@ test("uninstall removes only ours", () => {
 });
 
 test("install then uninstall round-trips to the original", () => {
-  const original = { model: "opus", hooks: { Stop: [{ hooks: [{ type: "command", command: "echo mine" }] }] } };
+  const original = {
+    model: "opus",
+    hooks: { Stop: [{ hooks: [{ type: "command", command: "echo mine" }] }] },
+  };
   const roundTripped = withoutGargoyleHooks(withGargoyleHooks(structuredClone(original)).settings);
 
   assert.deepEqual(roundTripped, original, "we must leave no trace behind");

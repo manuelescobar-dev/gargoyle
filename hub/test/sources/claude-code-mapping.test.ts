@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { fromClaudeHook } from "../../src/sources/claude-code.ts";
 import { Sessions } from "../../src/domain/sessions.ts";
 import { snapshot } from "../../src/domain/state.ts";
+import { fromClaudeHook } from "../../src/sources/claude-code.ts";
 
 const hook = (name: string, id = "s1") =>
   fromClaudeHook({ hook_event_name: name, session_id: id, cwd: "/w/x" });
@@ -50,7 +50,10 @@ test("a failed tool call is not a failed session", () => {
 
 test("blocked still outranks failed", () => {
   const sessions = new Sessions();
-  for (const [name, id] of [["StopFailure", "a"], ["PermissionRequest", "b"]] as const) {
+  for (const [name, id] of [
+    ["StopFailure", "a"],
+    ["PermissionRequest", "b"],
+  ] as const) {
     const e = fromClaudeHook({ hook_event_name: name, session_id: id, cwd: "/w/x" });
     if (e) sessions.apply(e);
   }

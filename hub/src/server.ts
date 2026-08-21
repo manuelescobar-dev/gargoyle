@@ -138,7 +138,8 @@ export function createHub(options: HubHandlers = {}) {
           if (typeof text === "string" && text.trim().length > 0) {
             options.onNudge?.({
               text: text.slice(0, 280),
-              replyTo: typeof (reply_to ?? replyTo) === "string" ? (reply_to ?? replyTo) : undefined,
+              replyTo:
+                typeof (reply_to ?? replyTo) === "string" ? (reply_to ?? replyTo) : undefined,
               expiresInMs: typeof expires_in_ms === "number" ? expires_in_ms : undefined,
             });
           }

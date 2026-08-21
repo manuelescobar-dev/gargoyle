@@ -76,7 +76,8 @@ const groupsFor = (settings: Settings, event: string): HookGroup[] =>
 
 export function withGargoyleHooks(input: Settings, port = HUB_PORT) {
   const settings = structuredClone(input);
-  const hooks = ((settings.hooks ??= {}) as Record<string, HookGroup[]>);
+  settings.hooks ??= {};
+  const hooks = settings.hooks as Record<string, HookGroup[]>;
 
   const added: string[] = [];
   const alreadyPresent: string[] = [];

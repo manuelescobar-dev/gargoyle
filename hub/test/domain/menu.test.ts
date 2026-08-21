@@ -76,7 +76,10 @@ test("nothing running means nothing to jump to", () => {
 
 // The pet knows which terminal is frontmost; only the hub knows which agent runs there.
 test("a terminal id is matched to its session by suffix", () => {
-  const embers = [ember("s1", "here", "running", 1_000), ember("s2", "elsewhere", "running", 5_000)];
+  const embers = [
+    ember("s1", "here", "running", 1_000),
+    ember("s2", "elsewhere", "running", 5_000),
+  ];
   // `w12t0p0:UUID` from the shell, bare `UUID` from AppleScript — matching is by suffix.
   const items = menuFor(snap(embers), { now, currentSession: "s1" });
   assert.equal(items[items.length - 1].id, "focus:s1");
@@ -92,7 +95,10 @@ test("something with no terminal gets no jump row", () => {
     ]),
     { now },
   );
-  assert.deepEqual(items.map((i) => i.id), ["focus:s1"]);
+  assert.deepEqual(
+    items.map((i) => i.id),
+    ["focus:s1"],
+  );
 });
 
 test("a blocked source with no terminal still doesn't get a row", () => {

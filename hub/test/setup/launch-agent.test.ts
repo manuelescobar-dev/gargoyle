@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { AGENT_LABEL, PET_LABEL, petPlistFor, plistFor } from "../../src/setup/launch-agent.ts";
 
-const plist = plistFor({ node: "/usr/bin/node", script: "/repo/hub/src/index.ts", logDir: "/logs" });
+const plist = plistFor({
+  node: "/usr/bin/node",
+  script: "/repo/hub/src/index.ts",
+  logDir: "/logs",
+});
 
 test("the plist names the program, the script and the label", () => {
   assert.ok(plist.includes(AGENT_LABEL));

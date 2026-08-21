@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { Broadcaster } from "../../src/transport/broadcast.ts";
 import type { Snapshot } from "../../src/domain/state.ts";
+import { Broadcaster } from "../../src/transport/broadcast.ts";
 
 const snap = (state: Snapshot["state"], blocked = 0): Snapshot => ({
   state,
@@ -49,8 +49,10 @@ test("it sends the whole state, never a diff", () => {
   const message = JSON.parse(r.sent[1]);
   assert.equal(message.t, "state");
   assert.equal(message.state, "needs-you");
-  assert.ok("embers" in message && "mood" in message && "blocked" in message,
-    "a pet that receives partial state would have to remember the rest");
+  assert.ok(
+    "embers" in message && "mood" in message && "blocked" in message,
+    "a pet that receives partial state would have to remember the rest",
+  );
 });
 
 test("a newly connected pet gets the current state immediately", () => {

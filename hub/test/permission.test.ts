@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createHub } from "../src/server.ts";
 
-const start = async (onPermissionRequest?: Parameters<typeof createHub>[0]["onPermissionRequest"]) => {
+const start = async (
+  onPermissionRequest?: Parameters<typeof createHub>[0]["onPermissionRequest"],
+) => {
   const decisions: Array<[string, string]> = [];
   const { server } = createHub({
     onPermissionRequest,
