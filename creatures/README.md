@@ -28,7 +28,9 @@ written to test exactly that, and it holds.
 Gargoyle is a roster. Creatures are swapped by hand, never automatically — your eye learns a creature's
 silhouette without you noticing, and rotating it on a timer would throw that away every morning.
 
-Adding one is authoring, not coding. If you have to touch Swift to add a creature, the contract has failed.
+Adding one means a small Swift conformance — see below. What must never change is the
+language: `needs-you` means the same thing on every creature, and that is the thing a new
+one must not break.
 
 ---
 
