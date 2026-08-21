@@ -31,6 +31,9 @@ feel real; the language model is not what does that work.
 
 With OpenClaw it gets generated lines and a memory that buys **fewer and better** interruptions.
 
-## Still open
+## Resolved
 
-Does OpenClaw expose a local channel a custom client can register on? Confirm before M3, not during.
+It doesn't — OpenClaw channels are in-process npm plugins, not clients that connect in.
+It turned out not to matter: a channel plugin is a shim onto `/nudge` and `/reply`, which
+already exist, so the integration needs no code here at all.
+See [0008](0008-openclaw-needs-nothing-from-us.md).
