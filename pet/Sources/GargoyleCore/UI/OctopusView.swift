@@ -16,6 +16,13 @@ public final class OctopusView: CreatureView {
     didSet { needsDisplay = true }
   }
 
+  /// Called when the creature itself is clicked — not the empty space around it.
+  public var onClick: (() -> Void)?
+
+  public override func mouseDown(with event: NSEvent) {
+    onClick?()
+  }
+
   /// What it's saying, if anything. Nil most of the time, by design.
   public var speech: String? {
     didSet {

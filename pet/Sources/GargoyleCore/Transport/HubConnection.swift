@@ -9,6 +9,7 @@ public final class HubConnection {
   private let url: URL
   private let onChange: (Snapshot?) -> Void
   private let onSay: (String) -> Void
+  private let onMenu: (Menu) -> Void
   private var everConnected = false
   private var state = HubState()
   private var task: URLSessionWebSocketTask?
@@ -22,16 +23,19 @@ public final class HubConnection {
     host: String = "127.0.0.1",
     port: Int = 7373,
     onChange: @escaping (Snapshot?) -> Void,
-    onSay: @escaping (String) -> Void = { _ in }
+    onSay: @escaping (String) -> Void = { _ in },
+    onMenu: @escaping (Menu) -> Void = { _ in }
   ) {
     url = URL(string: "ws://\(host):\(port)/socket")!
     self.onChange = onChange
     self.onSay = onSay
+    self.onMenu = onMenu
   }
 
   public func start() {
     // Until a socket is actually open we don't know anything, and saying so is the point.
     onChange(state.latest)
+    onMenu(state.menu)
     connect()
   }
 
@@ -60,6 +64,7 @@ public final class HubConnection {
           self.retryDelay = .milliseconds(250)  // any good frame means we're healthy again
 
           if changed { self.onChange(self.state.latest) }
+          self.onMenu(self.state.menu)
           if let situation = self.state.takeSituation() { self.onSay(situation) }
 
           // Coming back after being away is the one moment it greets you unprompted.

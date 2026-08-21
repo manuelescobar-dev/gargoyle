@@ -10,6 +10,10 @@ public struct HubState: Sendable {
 
   private var situation: String?
 
+  /// Emptied the moment the hub goes away — offering an action we can no longer carry
+  /// out is its own kind of lie.
+  public private(set) var menu: Menu = .empty
+
   private struct Tagged: Decodable { let t: String?; let situation: String? }
 
   public init() {}
@@ -21,9 +25,16 @@ public struct HubState: Sendable {
     // true a moment ago and nothing has said otherwise. Only an actual drop means unknown.
     // The hub says *that* something is worth saying and about what; the creature's
     // persona decides how it sounds.
-    if let tagged = try? JSONDecoder().decode(Tagged.self, from: data), tagged.t == "bubble" {
-      situation = tagged.situation
+    let tagged = try? JSONDecoder().decode(Tagged.self, from: data)
+
+    if tagged?.t == "bubble" {
+      situation = tagged?.situation
       return false  // nothing about the world changed
+    }
+
+    if tagged?.t == "menu" {
+      menu = (try? JSONDecoder().decode(Menu.self, from: data)) ?? .empty
+      return false
     }
 
     guard let snapshot = try? JSONDecoder().decode(Snapshot.self, from: data) else { return false }
@@ -36,6 +47,7 @@ public struct HubState: Sendable {
   /// itself and immediately, because whatever would have told it is what disappeared.
   public mutating func dropped() {
     latest = nil
+    menu = .empty
   }
 
   /// Hands over a pending situation exactly once — otherwise the creature would repeat

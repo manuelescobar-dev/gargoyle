@@ -4,6 +4,11 @@ import AppKit
 @MainActor
 public final class CreatureController {
   private let panel = CreaturePanel()
+  private let popover = PopoverPanel()
+  private var menu: Menu = .empty
+  private var summary = "all quiet"
+  /// Set by the app so a chosen item gets reported back to the hub.
+  public var onAction: (String) -> Void = { _ in }
   private let view: OctopusView
   private var inputs = CreatureInputs.from(nil)
   private var life = Liveliness()
@@ -29,15 +34,28 @@ public final class CreatureController {
     view = OctopusView(frame: panel.contentLayoutRect)
     view.autoresizingMask = [.width, .height]
     panel.contentView = view
+    view.onClick = { [weak self] in self?.toggle() }
     moveHome()
     panel.orderFront(nil)
     apply(nil)
     startAnimating()
   }
 
-  public func apply(_ snapshot: Snapshot?) {
+  public func apply(_ snapshot: Snapshot?, menu: Menu = .empty) {
     inputs = CreatureInputs.from(snapshot)
+    self.menu = menu
+    summary = MenuBarPresentation.from(snapshot).summary
     refresh()
+  }
+
+  private func toggle() {
+    guard !popover.isVisible else {
+      popover.hide()
+      return
+    }
+    popover.show(summary: summary, menu: menu, near: panel.frame) { [weak self] id in
+      self?.onAction(id)
+    }
   }
 
   /// The hub decided something is worth saying; the persona decides how it sounds.

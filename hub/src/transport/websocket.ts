@@ -18,12 +18,14 @@ export function attachWebSocket(server: Server) {
     }
   });
 
+  let lastMenu: string | null = null;
   const wss = new WebSocketServer({ server, path: "/socket" });
 
   wss.on("connection", (socket) => {
     clients.add(socket);
     // Don't make a pet that just connected wait for the next change to learn anything.
     broadcaster.greet((payload) => socket.send(payload));
+    if (lastMenu) socket.send(lastMenu);
     socket.on("close", () => clients.delete(socket));
     socket.on("error", () => clients.delete(socket));
   });
@@ -39,6 +41,12 @@ export function attachWebSocket(server: Server) {
     /// A situation key, not words. The creature's persona decides what that sounds like,
     /// so swapping the creature swaps the voice.
     speak: (situation: string) => sendAll(JSON.stringify({ t: "bubble", situation })),
+    sendMenu: (items: Array<{ id: string; label: string }>) => {
+      const payload = JSON.stringify({ t: "menu", items });
+      if (payload === lastMenu) return;  // an unchanged menu is not worth a frame
+      lastMenu = payload;
+      sendAll(payload);
+    },
     clientCount: () => clients.size,
   };
 }

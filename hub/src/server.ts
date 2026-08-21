@@ -11,7 +11,11 @@ export const PORT = 7373;
  *
  * No framework. It's two routes.
  */
-export function createHub(sessions = new Sessions(), onChange: (s: ReturnType<typeof snapshot>) => void = () => {}) {
+export function createHub(
+  sessions = new Sessions(),
+  onChange: (s: ReturnType<typeof snapshot>) => void = () => {},
+  onAction: (id: string) => void = () => {},
+) {
   // `doctor` needs to distinguish "wired up correctly" from "wired up and never fired",
   // which is the failure that otherwise looks exactly like everything being fine.
   const startedAt = Date.now();
@@ -46,6 +50,25 @@ export function createHub(sessions = new Sessions(), onChange: (s: ReturnType<ty
       sessions.prune();
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify(snapshot(sessions.list())));
+      return;
+    }
+
+    // The pet reports which item was chosen; it has no idea what the id means, which is
+    // exactly the point — all semantics stay on this side.
+    if (req.method === "POST" && req.url === "/action") {
+      let body = "";
+      req.on("data", (c) => {
+        body += c;
+      });
+      req.on("end", () => {
+        try {
+          const { id } = JSON.parse(body);
+          if (typeof id === "string") onAction(id);
+        } catch {
+          // a malformed action is the sender's problem, not a reason to fall over
+        }
+        res.writeHead(204).end();
+      });
       return;
     }
 
