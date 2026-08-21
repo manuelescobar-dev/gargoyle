@@ -1,0 +1,43 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A run made obsolete by a newer push is a run nobody will read.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hub:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hub
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: hub/package-lock.json
+      - run: npm ci
+      # Node runs the TypeScript directly, so there's nothing to build.
+      - run: npm test
+      - run: npx biome ci .
+
+  pet:
+    # macOS only: the pet is AppKit throughout.
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: pet
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift --version
+      - run: swift test
+      # The bundle is what people actually install, so a build script that breaks
+      # should fail here rather than at someone's first install.
+      - run: ./make-app.sh debug
