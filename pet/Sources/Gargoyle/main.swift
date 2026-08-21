@@ -1,7 +1,8 @@
 import AppKit
 import GargoyleCore
 
-// No bundle, no Info.plist, no Xcode project — `.accessory` at runtime is all this needs.
+// The bundle sets LSUIElement, which does this properly. Kept for `swift run`, where
+// there's no bundle to read it from.
 let app = NSApplication.shared
 app.setActivationPolicy(.accessory)
 

@@ -3,6 +3,7 @@ export type Checks = {
   hooksWired: boolean;
   agentLoaded: boolean;
   eventsSeen: number;
+  creatureRunning?: boolean;
 };
 
 /**
@@ -34,6 +35,14 @@ export function diagnose(checks: Checks): { ok: boolean; lines: string[] } {
       ? "✓ launch agent loaded — the hub starts at login"
       : "· launch agent isn't loaded, so the hub won't start at login (`gargoyle install`)",
   );
+
+  if (checks.creatureRunning !== undefined) {
+    lines.push(
+      checks.creatureRunning
+        ? "✓ creature is on screen"
+        : "· creature isn't running — build it with `pet/make-app.sh`, then `gargoyle install`",
+    );
+  }
 
   if (checks.eventsSeen > 0) {
     lines.push(`✓ ${checks.eventsSeen} event${checks.eventsSeen === 1 ? "" : "s"} received`);

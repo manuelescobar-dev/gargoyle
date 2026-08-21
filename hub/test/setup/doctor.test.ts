@@ -43,3 +43,16 @@ test("an unloaded agent is a warning, not a failure — you can run the hub by h
   assert.equal(ok, true, "the hub is up, which is what actually matters");
   assert.ok(lines.some((l) => l.startsWith("·")));
 });
+
+// The creature not running isn't a broken install — the hub is still doing its job, and
+// plenty of people would rather launch it themselves.
+test("a missing creature is worth knowing, not a failure", () => {
+  const { ok, lines } = diagnose({ ...healthy, creatureRunning: false });
+  assert.equal(ok, true);
+  assert.ok(lines.some((l) => l.startsWith("·") && /creature/.test(l)));
+});
+
+test("a running creature is reported", () => {
+  const { lines } = diagnose({ ...healthy, creatureRunning: true });
+  assert.ok(lines.some((l) => l === "✓ creature is on screen"));
+});

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { AGENT_LABEL, plistFor } from "../../src/setup/launch-agent.ts";
+import { AGENT_LABEL, PET_LABEL, petPlistFor, plistFor } from "../../src/setup/launch-agent.ts";
 
 const plist = plistFor({ node: "/usr/bin/node", script: "/repo/hub/src/index.ts", logDir: "/logs" });
 
@@ -33,4 +33,19 @@ test("XML special characters are escaped", () => {
   const nasty = plistFor({ node: "/n", script: "/a&b/index.ts", logDir: "/logs" });
   assert.ok(nasty.includes("/a&amp;b/index.ts"), "an unescaped & is a corrupt plist");
   assert.ok(!nasty.includes("/a&b/"));
+});
+
+// The creature is the half people actually notice is missing after a reboot.
+test("the pet gets its own agent, launching the bundle", () => {
+  const plist = petPlistFor({ app: "/Users/me/Applications/Gargoyle.app", logDir: "/logs" });
+  assert.ok(plist.includes(PET_LABEL));
+  assert.ok(plist.includes("/Users/me/Applications/Gargoyle.app/Contents/MacOS/Gargoyle"));
+  assert.ok(plist.includes("RunAtLoad"), "always on screen has to survive a restart");
+  assert.ok(plist.includes("/logs/pet.log"), "its own log, not the hub's");
+});
+
+test("the two agents don't collide", () => {
+  assert.notEqual(AGENT_LABEL, PET_LABEL);
+  const hub = plistFor({ node: "/n", script: "/s", logDir: "/logs" });
+  assert.ok(!hub.includes(PET_LABEL));
 });

@@ -3,3 +3,4 @@ node_modules/
 *.xcodeproj
 .build/
 pet/.build/
+pet/Gargoyle.app/

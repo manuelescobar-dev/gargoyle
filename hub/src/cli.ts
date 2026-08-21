@@ -1,9 +1,17 @@
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { homedir, userInfo } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { AGENT_LABEL, plistFor } from "./setup/launch-agent.ts";
+import { AGENT_LABEL, PET_LABEL, petPlistFor, plistFor } from "./setup/launch-agent.ts";
 import { type Checks, diagnose } from "./setup/doctor.ts";
 import { HUB_PORT, withGargoyleHooks, withoutGargoyleHooks } from "./setup/claude-hooks.ts";
 
@@ -15,6 +23,11 @@ const claudeDir = process.env.CLAUDE_CONFIG_DIR || join(home, ".claude");
 const settingsPath = join(claudeDir, "settings.json");
 const agentsDir = process.env.GARGOYLE_LAUNCH_AGENTS_DIR || join(home, "Library", "LaunchAgents");
 const plistPath = join(agentsDir, `${AGENT_LABEL}.plist`);
+const petPlistPath = join(agentsDir, `${PET_LABEL}.plist`);
+/// Installed out of the repo, so moving or deleting the checkout doesn't take the
+/// creature with it.
+const installedApp = join(home, "Applications", "Gargoyle.app");
+const builtApp = join(dirname(dirname(dirname(fileURLToPath(import.meta.url)))), "pet", "Gargoyle.app");
 const logDir = join(home, "Library", "Logs", "gargoyle");
 const hubScript = join(dirname(fileURLToPath(import.meta.url)), "index.ts");
 
@@ -80,9 +93,28 @@ switch (process.argv[2]) {
 
     console.log(
       loaded
-        ? "✓ hub installed as a launch agent — it starts at login"
+        ? "✓ hub starts at login"
         : `· wrote ${plistPath}, but launchctl wouldn't load it. Run the hub with \`npm start\`.`,
     );
+
+    // The creature is the half you notice is missing after a reboot.
+    if (existsSync(builtApp)) {
+      rmSync(installedApp, { recursive: true, force: true });
+      mkdirSync(dirname(installedApp), { recursive: true });
+      cpSync(builtApp, installedApp, { recursive: true });
+      writeFileSync(petPlistPath, petPlistFor({ app: installedApp, logDir }));
+
+      launchctl("bootout", `${domain}/${PET_LABEL}`);
+      const petLoaded =
+        launchctl("bootstrap", domain, petPlistPath) || launchctl("load", "-w", petPlistPath);
+      console.log(
+        petLoaded
+          ? `✓ creature installed to ${installedApp} — it starts at login too`
+          : `· installed ${installedApp}, but launchctl wouldn't load it. Open it yourself.`,
+      );
+    } else {
+      console.log("· no creature built yet — run `pet/make-app.sh`, then this again");
+    }
     // Found the hard way: Claude Code reads hooks when a session starts, so the session
     // you ran this from will never fire them. Without saying so, the first five minutes
     // are "I installed it and nothing happened".
@@ -98,9 +130,16 @@ switch (process.argv[2]) {
     writeSettings(withoutGargoyleHooks(readSettings()));
     console.log("✓ removed Gargoyle's hooks from Claude Code");
 
-    launchctl("bootout", `${domain}/${AGENT_LABEL}`) || launchctl("unload", "-w", plistPath);
-    if (existsSync(plistPath)) rmSync(plistPath);
-    console.log("✓ removed the launch agent\n\nYour other hooks and settings were left alone.");
+    for (const [label, path] of [
+      [AGENT_LABEL, plistPath],
+      [PET_LABEL, petPlistPath],
+    ] as const) {
+      launchctl("bootout", `${domain}/${label}`) || launchctl("unload", "-w", path);
+      if (existsSync(path)) rmSync(path);
+    }
+    rmSync(installedApp, { recursive: true, force: true });
+    console.log("✓ removed both launch agents and the installed app");
+    console.log("\nYour other hooks and settings were left alone.");
     break;
   }
 
@@ -112,6 +151,7 @@ switch (process.argv[2]) {
       hubUp: health !== null,
       hooksWired: hooks.includes("/event"),
       agentLoaded: launchctl("print", `${domain}/${AGENT_LABEL}`),
+      creatureRunning: launchctl("print", `${domain}/${PET_LABEL}`),
       eventsSeen: health ? ((await health.json()) as { eventsReceived: number }).eventsReceived : 0,
     };
 

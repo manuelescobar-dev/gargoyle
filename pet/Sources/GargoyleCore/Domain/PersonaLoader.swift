@@ -1,28 +1,41 @@
 import Foundation
 
-/// Finds the creature's persona on disk.
+/// Finds the creature's persona.
 ///
-/// Walks up from the executable looking for `creatures/<name>/persona.md`, which works
-/// from a dev build. When it can't find one it falls back to a small built-in voice —
-/// a mute creature would be worse than a briefly repetitive one.
-///
-/// TODO: bundle personas as package resources so an installed build doesn't depend on
-/// sitting inside the repo.
+/// Inside the app bundle first, since that's where it lives once installed. Failing that,
+/// walks up from the executable to find the repo, which is what a dev build needs. Failing
+/// both, a small built-in voice — a mute creature would be worse than a briefly repetitive one.
 public enum PersonaLoader {
   public static func load(creature: String = "octopus") -> Persona {
-    var directory = URL(fileURLWithPath: CommandLine.arguments.first ?? ".")
-      .deletingLastPathComponent()
-
-    for _ in 0..<8 {
-      let candidate = directory.appending(path: "creatures/\(creature)/persona.md")
-      if let text = try? String(contentsOf: candidate, encoding: .utf8),
+    for url in candidates(for: creature) {
+      if let text = try? String(contentsOf: url, encoding: .utf8),
          let persona = try? Persona(markdown: text) {
+        Trace.log("persona: loaded \(url.path)")
         return persona
       }
+    }
+
+    Trace.log("persona: none found on disk, using the built-in voice")
+    return (try? Persona(markdown: fallback)) ?? (try! Persona(markdown: "---\nname: ?\n---"))
+  }
+
+  private static func candidates(for creature: String) -> [URL] {
+    var urls: [URL] = []
+
+    // Installed: shipped inside the bundle.
+    if let resources = Bundle.main.resourceURL {
+      urls.append(resources.appending(path: "creatures/\(creature)/persona.md"))
+    }
+
+    // Dev build: somewhere above the executable is the repo.
+    var directory = URL(fileURLWithPath: CommandLine.arguments.first ?? ".")
+      .deletingLastPathComponent()
+    for _ in 0..<8 {
+      urls.append(directory.appending(path: "creatures/\(creature)/persona.md"))
       directory.deleteLastPathComponent()
     }
 
-    return (try? Persona(markdown: fallback)) ?? (try! Persona(markdown: "---\nname: ?\n---"))
+    return urls
   }
 
   private static let fallback = """
