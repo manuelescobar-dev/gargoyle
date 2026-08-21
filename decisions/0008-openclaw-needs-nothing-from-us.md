@@ -85,8 +85,21 @@ instead of an integration, so the integration keeps arriving as an ordinary user
 The lesson isn't about OpenClaw. It's that a general mechanism is worth more than the
 specific feature it was avoided for — and you find that out later, not when you build it.
 
-## Not verified end to end
+## Verified end to end
 
-The pieces are each confirmed — `/nudge` and `reply_to` are tested and were run against the
-installed hub, and `openclaw agent -m` exists in the CLI. The composition is not tested,
-because running it invokes a real agent turn on someone's account, which isn't ours to spend.
+Run against a real OpenClaw 2026.1.30 install. The nudge queued and stayed silent, surfaced
+on a glance, the answer ran `reply_to`, `openclaw` was found on PATH, and the agent turn
+reached its lane. It stopped there only because that install has no Anthropic credentials
+configured — which is that OpenClaw's setup, not this seam.
+
+Two things the run corrected:
+
+**`openclaw agent` needs a session.** Bare `-m` fails with *"Pass --to, --session-id, or
+--agent to choose a session"*. The example uses `--session-id gargoyle`, which also keeps
+these turns in their own thread instead of interleaving with your real conversations.
+
+**The hub needed your PATH.** launchd hands an agent a minimal PATH with no nvm, no
+Homebrew and no `~/bin`, so `openclaw` — and every declared source, and every other
+`reply_to` — died with "command not found". `install` now captures your PATH into the plist.
+That bug would have broken essentially every integration anyone wrote, and it only surfaced
+because we ran the thing rather than reasoning about it.

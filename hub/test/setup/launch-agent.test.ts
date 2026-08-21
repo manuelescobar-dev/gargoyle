@@ -53,3 +53,21 @@ test("the two agents don't collide", () => {
   const hub = plistFor({ node: "/n", script: "/s", logDir: "/logs" });
   assert.ok(!hub.includes(PET_LABEL));
 });
+
+// launchd hands an agent a minimal PATH with no nvm, no Homebrew, no ~/bin — so a
+// `reply_to: "openclaw agent ..."` dies with "command not found" and the user has no idea why.
+test("the hub inherits the PATH you installed with", () => {
+  const plist = plistFor({
+    node: "/n",
+    script: "/s",
+    logDir: "/logs",
+    path: "/opt/homebrew/bin:/usr/bin",
+  });
+  assert.ok(plist.includes("EnvironmentVariables"));
+  assert.ok(plist.includes("/opt/homebrew/bin:/usr/bin"));
+});
+
+test("no PATH given means no PATH key, rather than an empty one", () => {
+  const plist = plistFor({ node: "/n", script: "/s", logDir: "/logs" });
+  assert.ok(!plist.includes("EnvironmentVariables"), "an empty PATH would be worse than none");
+});

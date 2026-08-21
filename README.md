@@ -109,7 +109,7 @@ send the answer back with `openclaw agent`:
 
 ```bash
 curl -s -X POST localhost:7373/nudge \
-  -d '{"text":"what did you eat?","reply_to":"openclaw agent -m \"$(cat)\""}'
+  -d '{"text":"what did you eat?","reply_to":"openclaw agent --session-id gargoyle -m \"$(cat)\""}'
 ```
 
 Gargoyle asks when you're already looking, your answer becomes an agent turn, and Gargoyle

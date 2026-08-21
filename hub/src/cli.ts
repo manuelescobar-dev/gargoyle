@@ -90,7 +90,12 @@ switch (process.argv[2]) {
 
     mkdirSync(agentsDir, { recursive: true });
     mkdirSync(logDir, { recursive: true });
-    writeFileSync(plistPath, plistFor({ node: process.execPath, script: hubScript, logDir }));
+    writeFileSync(
+      plistPath,
+      // Your PATH, not launchd's: otherwise every source and every reply_to that isn't an
+      // absolute path fails with "command not found".
+      plistFor({ node: process.execPath, script: hubScript, logDir, path: process.env.PATH }),
+    );
 
     launchctl("bootout", `${domain}/${AGENT_LABEL}`); // ignore failure: usually not loaded yet
     launchctl("bootstrap", domain, plistPath) || launchctl("load", "-w", plistPath);
