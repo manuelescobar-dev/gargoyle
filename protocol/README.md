@@ -39,11 +39,25 @@ traffic at all. The pet renders this and keeps nothing.
 { "t": "menu", "items": [ { "id": "focus:s3", "label": "Jump to billing-fix" } ] }
 ```
 
-### `request` — something needs a human decision
+### `request` — a tool call is waiting on you
 
 ```jsonc
-{ "t": "request", "id": "r7", "summary": "billing-fix wants to write src/auth/session.ts" }
+{ "t": "request", "id": "r7", "summary": "Write src/auth/session.ts" }
+{ "t": "withdraw", "id": "r7" }   // answered, or nobody answered in time
 ```
+
+While this is outstanding a Claude Code hook is **holding the tool call open**. The hub gives
+up after 20 seconds and the agent falls back to its normal terminal prompt, so a question
+left unanswered costs nothing.
+
+### `focus` — raise a terminal
+
+```jsonc
+{ "t": "focus", "app": "iTerm.app", "term": "w12t0p0:UUID" }
+```
+
+The hub decides which; only the pet can perform it, because macOS won't grant Automation
+rights to a launchd agent — [decisions/0007](../decisions/0007-who-can-ask-for-permission.md).
 
 ### `bubble` — a queued nudge, released on a natural glance
 
@@ -78,6 +92,15 @@ message, and a coding agent can all be embers without the pet learning anything 
 itself. It does not wait to be told, because the thing that would tell it is gone. It then
 reconnects with backoff, and a single malformed frame on a *live* socket is ignored rather than
 treated as a disconnect — the last snapshot was true a moment ago and nothing says otherwise.
+
+## The pet's HTTP calls
+
+The pet answers over HTTP rather than the socket, because these are requests with a result:
+
+```
+POST /action     {"id": "focus:s3"}
+POST /decision   {"id": "r7", "decision": "allow" | "deny"}
+```
 
 ## Not on the wire yet
 

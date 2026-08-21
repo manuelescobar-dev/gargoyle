@@ -1,35 +1,63 @@
 import { createServer, type Server } from "node:http";
-import { fromClaudeHook } from "./sources/claude-code.ts";
 import { Sessions } from "./domain/sessions.ts";
 import { snapshot } from "./domain/state.ts";
+import { fromClaudeHook } from "./sources/claude-code.ts";
 
 export const PORT = 7373;
 
+export type HubHandlers = {
+  sessions?: Sessions;
+  onChange?: (s: ReturnType<typeof snapshot>) => void;
+  onAction?: (id: string) => void;
+  /**
+   * Called when a tool call needs a decision. Returns the JSON body to hand back to
+   * Claude Code, or `null` to say nothing — which Claude Code treats exactly as if
+   * Gargoyle weren't installed.
+   */
+  onPermissionRequest?: (
+    payload: Record<string, unknown>,
+    sessionId: string,
+  ) => Promise<string | null>;
+  onDecision?: (id: string, decision: "allow" | "deny") => void;
+};
+
+/** Collects a request body, then hands it over. */
+const readBody = (req: Parameters<Parameters<typeof createServer>[0]>[0]) =>
+  new Promise<string>((resolve) => {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+    req.on("end", () => resolve(body));
+  });
+
 /**
- * Two routes. POST /event takes anything that can produce JSON — a Claude Code hook,
- * a cron job, an iOS Shortcut. GET /state is what the surface reads.
+ * POST /event     anything that produces JSON — hooks, cron jobs, Shortcuts
+ * POST /action    the pet reporting a chosen menu item
+ * POST /decision  the pet answering a permission request
+ * GET  /state     the current snapshot
+ * GET  /health    for `doctor`
  *
- * No framework. It's two routes.
+ * No framework. It's five routes.
  */
-export function createHub(
-  sessions = new Sessions(),
-  onChange: (s: ReturnType<typeof snapshot>) => void = () => {},
-  onAction: (id: string) => void = () => {},
-) {
-  // `doctor` needs to distinguish "wired up correctly" from "wired up and never fired",
-  // which is the failure that otherwise looks exactly like everything being fine.
+export function createHub(options: HubHandlers = {}) {
+  const sessions = options.sessions ?? new Sessions();
+  const onChange = options.onChange ?? (() => {});
+
+  // `doctor` needs to tell "wired up correctly" from "wired up and never fired", which is
+  // the failure that otherwise looks exactly like everything being fine.
   const startedAt = Date.now();
   let eventsReceived = 0;
 
   const server: Server = createServer((req, res) => {
+    const done = (status: number, body?: string) => {
+      if (body) res.writeHead(status, { "content-type": "application/json" }).end(body);
+      else res.writeHead(status).end();
+    };
+
     if (req.method === "POST" && req.url === "/event") {
-      let body = "";
-      req.on("data", (c) => {
-        body += c;
-      });
-      req.on("end", () => {
-        // A malformed hook must never take the hub down — every agent on the
-        // machine is feeding this endpoint.
+      void (async () => {
+        const body = await readBody(req);
         try {
           // The hook runs inside the agent's own terminal, so it can tell us which one.
           const header = (name: string) => {
@@ -37,57 +65,72 @@ export function createHub(
             const text = Array.isArray(value) ? value[0] : value;
             return text && text.length > 0 ? text : undefined;
           };
-          const event = fromClaudeHook(JSON.parse(body), Date.now(), {
+
+          const payload = JSON.parse(body) as Record<string, unknown>;
+          const event = fromClaudeHook(payload, Date.now(), {
             app: header("x-gargoyle-term-app"),
             term: header("x-gargoyle-term"),
           });
+
           if (event) {
             sessions.apply(event);
             eventsReceived++;
             sessions.prune();
             onChange(snapshot(sessions.list()));
+
+            // Only this one waits, and only if someone is there to answer.
+            if (event.type === "blocked" && options.onPermissionRequest) {
+              const answer = await options.onPermissionRequest(payload, event.sessionId);
+              if (answer) return done(200, answer);
+            }
           }
         } catch {
-          // ignored on purpose: unparseable input is the sender's problem
+          // A bad payload — or a failure while asking — must never block an agent.
         }
-        res.writeHead(204).end();
+        done(204);
+      })();
+      return;
+    }
+
+    // The pet reports which item was chosen; it has no idea what the id means.
+    if (req.method === "POST" && req.url === "/action") {
+      void readBody(req).then((body) => {
+        try {
+          const { id } = JSON.parse(body);
+          if (typeof id === "string") options.onAction?.(id);
+        } catch {
+          // the sender's problem, not ours
+        }
+        done(204);
+      });
+      return;
+    }
+
+    if (req.method === "POST" && req.url === "/decision") {
+      void readBody(req).then((body) => {
+        try {
+          const { id, decision } = JSON.parse(body);
+          if (typeof id === "string" && (decision === "allow" || decision === "deny")) {
+            options.onDecision?.(id, decision);
+          }
+        } catch {
+          // the sender's problem, not ours
+        }
+        done(204);
       });
       return;
     }
 
     if (req.method === "GET" && req.url === "/state") {
       sessions.prune();
-      res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify(snapshot(sessions.list())));
-      return;
-    }
-
-    // The pet reports which item was chosen; it has no idea what the id means, which is
-    // exactly the point — all semantics stay on this side.
-    if (req.method === "POST" && req.url === "/action") {
-      let body = "";
-      req.on("data", (c) => {
-        body += c;
-      });
-      req.on("end", () => {
-        try {
-          const { id } = JSON.parse(body);
-          if (typeof id === "string") onAction(id);
-        } catch {
-          // a malformed action is the sender's problem, not a reason to fall over
-        }
-        res.writeHead(204).end();
-      });
-      return;
+      return done(200, JSON.stringify(snapshot(sessions.list())));
     }
 
     if (req.method === "GET" && req.url === "/health") {
-      res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ uptimeMs: Date.now() - startedAt, eventsReceived }));
-      return;
+      return done(200, JSON.stringify({ uptimeMs: Date.now() - startedAt, eventsReceived }));
     }
 
-    res.writeHead(404).end();
+    done(404);
   });
 
   return { server, sessions, health: () => ({ eventsReceived }) };

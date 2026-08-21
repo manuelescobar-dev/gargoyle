@@ -29,13 +29,29 @@ public final class PopoverPanel: NSPanel {
 
   public override var canBecomeKey: Bool { true }
 
-  public func show(summary: String, menu: Menu, near creature: NSRect, onChoose: @escaping (String) -> Void) {
+  public func show(
+    summary: String,
+    menu: Menu,
+    request: (id: String, summary: String)?,
+    near creature: NSRect,
+    onChoose: @escaping (String) -> Void,
+    onDecide: @escaping (String, Bool) -> Void
+  ) {
     self.onChoose = onChoose
 
-    let content = PopoverContent(summary: summary, items: menu.items) { [weak self] id in
-      self?.onChoose(id)
-      self?.hide()
-    }
+    let content = PopoverContent(
+      summary: summary,
+      items: menu.items,
+      request: request.map { PopoverContent.Request(id: $0.id, summary: $0.summary) },
+      choose: { [weak self] id in
+        self?.onChoose(id)
+        self?.hide()
+      },
+      decide: { [weak self] id, approved in
+        onDecide(id, approved)
+        self?.hide()
+      }
+    )
 
     let view = NSHostingView(rootView: content)
     view.frame.size = view.fittingSize
@@ -77,12 +93,18 @@ public final class PopoverPanel: NSPanel {
 }
 
 struct PopoverContent: View {
+  struct Request { let id: String; let summary: String }
+
   let summary: String
   let items: [Menu.Item]
+  let request: Request?
   let choose: (String) -> Void
+  let decide: (String, Bool) -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
+      if let request { permission(request) }
+
       Text(summary)
         .font(.system(size: 12, weight: .medium))
         .foregroundStyle(.secondary)
@@ -117,7 +139,37 @@ struct PopoverContent: View {
 
       Color.clear.frame(height: 6)
     }
-    .frame(width: 240)
+    .frame(width: 260)
     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+  }
+
+  /// Sits at the top because it's the only thing here with a clock running on it — the hub
+  /// gives up after twenty seconds and hands the question back to the terminal.
+  @ViewBuilder
+  private func permission(_ request: Request) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text("Wants to")
+        .font(.system(size: 11, weight: .semibold))
+        .foregroundStyle(.secondary)
+
+      Text(request.summary)
+        .font(.system(size: 13, weight: .medium))
+        .lineLimit(3)
+        .fixedSize(horizontal: false, vertical: true)
+
+      HStack(spacing: 8) {
+        Button("Approve") { decide(request.id, true) }
+          .buttonStyle(.borderedProminent)
+          .controlSize(.small)
+        Button("Deny") { decide(request.id, false) }
+          .buttonStyle(.bordered)
+          .controlSize(.small)
+      }
+    }
+    .padding(.horizontal, 14)
+    .padding(.top, 12)
+    .padding(.bottom, 10)
+
+    Divider().padding(.horizontal, 10)
   }
 }

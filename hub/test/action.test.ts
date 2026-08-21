@@ -4,10 +4,17 @@ import { createHub } from "../src/server.ts";
 
 const listen = async () => {
   const seen: string[] = [];
-  const { server } = createHub(undefined, () => {}, (id) => seen.push(id));
+  const { server } = createHub({ onAction: (id) => seen.push(id) });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   const port = (server.address() as { port: number }).port;
-  return { seen, port, close: () => server.close() };
+  return {
+    seen,
+    port,
+    close: () => {
+      server.closeAllConnections();
+      server.close();
+    },
+  };
 };
 
 const post = (port: number, body: string) =>

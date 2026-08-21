@@ -9,6 +9,9 @@ public final class CreatureController {
   private var summary = "all quiet"
   /// Set by the app so a chosen item gets reported back to the hub.
   public var onAction: (String) -> Void = { _ in }
+  /// Reports an answered permission request. `true` approves.
+  public var onDecide: (String, Bool) -> Void = { _, _ in }
+  private var request: (id: String, summary: String)?
   private let view: OctopusView
   private var inputs = CreatureInputs.from(nil)
   private var life = Liveliness()
@@ -41,6 +44,12 @@ public final class CreatureController {
     startAnimating()
   }
 
+  /// A question waiting on you. Deliberately does *not* open the popover — the raised arm
+  /// is the signal, and a window appearing over your work uninvited is how Clippy failed.
+  public func awaiting(_ request: (id: String, summary: String)?) {
+    self.request = request
+  }
+
   public func apply(_ snapshot: Snapshot?, menu: Menu = .empty) {
     inputs = CreatureInputs.from(snapshot)
     self.menu = menu
@@ -53,9 +62,17 @@ public final class CreatureController {
       popover.hide()
       return
     }
-    popover.show(summary: summary, menu: menu, near: panel.frame) { [weak self] id in
-      self?.onAction(id)
-    }
+    popover.show(
+      summary: summary,
+      menu: menu,
+      request: request,
+      near: panel.frame,
+      onChoose: { [weak self] id in self?.onAction(id) },
+      onDecide: { [weak self] id, approved in
+        self?.request = nil
+        self?.onDecide(id, approved)
+      }
+    )
   }
 
   /// The hub decided something is worth saying; the persona decides how it sounds.

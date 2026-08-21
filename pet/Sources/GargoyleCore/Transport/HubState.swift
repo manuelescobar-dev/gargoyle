@@ -19,7 +19,13 @@ public struct HubState: Sendable {
     let situation: String?
     let app: String?
     let term: String?
+    let id: String?
+    let summary: String?
   }
+
+  /// A tool call waiting on you. Cleared when the hub withdraws it or the socket drops —
+  /// answering a question nobody is waiting on any more would do nothing.
+  public private(set) var pendingRequest: (id: String, summary: String)?
 
   /// A terminal the hub wants raised, handed over once.
   private var focusRequest: (app: String?, term: String?)?
@@ -38,6 +44,16 @@ public struct HubState: Sendable {
     if tagged?.t == "bubble" {
       situation = tagged?.situation
       return false  // nothing about the world changed
+    }
+
+    if tagged?.t == "request" {
+      if let id = tagged?.id { pendingRequest = (id, tagged?.summary ?? "needs a decision") }
+      return false
+    }
+
+    if tagged?.t == "withdraw" {
+      if tagged?.id == pendingRequest?.id { pendingRequest = nil }
+      return false
     }
 
     if tagged?.t == "focus" {
@@ -61,6 +77,7 @@ public struct HubState: Sendable {
   public mutating func dropped() {
     latest = nil
     menu = .empty
+    pendingRequest = nil
   }
 
   /// Hands over a pending situation exactly once — otherwise the creature would repeat

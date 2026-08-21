@@ -10,7 +10,10 @@ import { Broadcaster } from "./broadcast.ts";
  * makes `unknown` honest — a dropped socket is immediate and unambiguous, where a
  * missed poll is just a pause.
  */
-export function attachWebSocket(server: Server) {
+export function attachWebSocket(
+  server: Server,
+  options: { onLastClientGone?: () => void } = {},
+) {
   const clients = new Set<import("ws").WebSocket>();
   const broadcaster = new Broadcaster((payload) => {
     for (const client of clients) {
@@ -26,8 +29,12 @@ export function attachWebSocket(server: Server) {
     // Don't make a pet that just connected wait for the next change to learn anything.
     broadcaster.greet((payload) => socket.send(payload));
     if (lastMenu) socket.send(lastMenu);
-    socket.on("close", () => clients.delete(socket));
-    socket.on("error", () => clients.delete(socket));
+    const forget = () => {
+      clients.delete(socket);
+      if (clients.size === 0) options.onLastClientGone?.();
+    };
+    socket.on("close", forget);
+    socket.on("error", forget);
   });
 
   const sendAll = (payload: string) => {
@@ -41,6 +48,10 @@ export function attachWebSocket(server: Server) {
     /// A situation key, not words. The creature's persona decides what that sounds like,
     /// so swapping the creature swaps the voice.
     speak: (situation: string) => sendAll(JSON.stringify({ t: "bubble", situation })),
+    /// Puts a permission question in front of the user.
+    ask: (id: string, summary: string) => sendAll(JSON.stringify({ t: "request", id, summary })),
+    /// Takes the question away again — answered, or nobody answered in time.
+    withdraw: (id: string) => sendAll(JSON.stringify({ t: "withdraw", id })),
     /// Asks the pet to raise a terminal. It's the surface's job because only a real app
     /// can be granted Automation permission.
     focus: (terminal: { app?: string; term?: string }) =>

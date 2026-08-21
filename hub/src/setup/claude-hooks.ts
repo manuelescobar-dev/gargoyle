@@ -39,7 +39,10 @@ export const NARROWED_EVENTS: Record<string, string> = {
   Notification: "idle_prompt|agent_needs_input",
 };
 
-type HookEntry = { type: string; command: string };
+type HookEntry = { type: string; command: string; timeout?: number };
+
+const timeoutFor = (event: string) =>
+  event === "PermissionRequest" ? { timeout: DECIDE_HOOK_TIMEOUT } : {};
 type HookGroup = { matcher?: string; hooks: HookEntry[] };
 type Settings = Record<string, unknown>;
 
@@ -48,10 +51,21 @@ type Settings = Record<string, unknown>;
  * in — far more reliable than us guessing later from window titles. Sent as headers so the
  * payload from Claude Code passes through untouched.
  */
-const commandFor = (port: number) =>
-  "curl -s -m 2 -X POST " +
+const commandFor = (port: number, maxSeconds = 2) =>
+  `curl -s -m ${maxSeconds} -X POST ` +
   `-H "X-Gargoyle-Term: $TERM_SESSION_ID" -H "X-Gargoyle-Term-App: $TERM_PROGRAM" ` +
   `http://127.0.0.1:${port}/event --data-binary @- ${GARGOYLE_MARKER}`;
+
+/**
+ * A permission request is the one hook that waits on a human, so it gets a longer leash
+ * and its own Claude Code `timeout`. Both are hard stops: when either fires the hook
+ * produces nothing, and Claude Code falls back to its normal terminal prompt exactly as
+ * if Gargoyle weren't installed.
+ *
+ * curl's own limit is deliberately under Claude Code's, so we're always the one to give up.
+ */
+const DECIDE_CURL_SECONDS = 25;
+const DECIDE_HOOK_TIMEOUT = 30;
 
 /** Identified by the marker, not by the URL — so changing the port doesn't orphan an install. */
 const isOurs = (hook: HookEntry) =>
@@ -74,19 +88,23 @@ export function withGargoyleHooks(input: Settings, port = HUB_PORT) {
     ...Object.entries(NARROWED_EVENTS),
   ];
 
+  const commandForEvent = (event: string) =>
+    event === "PermissionRequest" ? commandFor(port, DECIDE_CURL_SECONDS) : current;
+
   for (const [event, matcher] of wanted) {
     const existing = groupsFor(settings, event);
 
     if (existing.some((group) => (group.hooks ?? []).some(isOurs))) {
       // Ours is already here — but it may be an older command. Rewrite it in place,
       // otherwise every change we ever make to the hook reaches nobody.
+      const wantedCommand = commandForEvent(event);
       let changed = false;
       hooks[event] = existing.map((group) => ({
         ...group,
         hooks: (group.hooks ?? []).map((hook) => {
-          if (!isOurs(hook) || hook.command === current) return hook;
+          if (!isOurs(hook) || hook.command === wantedCommand) return hook;
           changed = true;
-          return { ...hook, command: current };
+          return { ...hook, command: wantedCommand, ...timeoutFor(event) };
         }),
       }));
 
@@ -95,7 +113,9 @@ export function withGargoyleHooks(input: Settings, port = HUB_PORT) {
     }
 
     // Appended, never substituted. Someone else's hooks are none of our business.
-    const group: HookGroup = { hooks: [{ type: "command", command: current }] };
+    const group: HookGroup = {
+      hooks: [{ type: "command", command: commandForEvent(event), ...timeoutFor(event) }],
+    };
     if (matcher) group.matcher = matcher;
 
     hooks[event] = [...existing, group];

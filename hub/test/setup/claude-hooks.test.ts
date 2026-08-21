@@ -28,6 +28,30 @@ test("keeps hooks that were already there on the same event", () => {
   assert.equal(commands.length, 2, "ours is appended, not substituted");
 });
 
+// The one hook that waits on a human needs longer than the rest, and a hard stop that
+// hands the question back to the terminal rather than leaving the agent blocked.
+test("the permission hook waits longer, and is bounded twice over", () => {
+  const settings = withGargoyleHooks({}).settings as any;
+  const group = settings.hooks.PermissionRequest[0];
+  const command = group.hooks[0].command as string;
+
+  const curlSeconds = Number(command.match(/-m (\d+)/)![1]);
+  assert.ok(curlSeconds > 5, "two seconds is shorter than a person");
+  assert.ok(
+    curlSeconds < group.hooks[0].timeout,
+    "curl must give up before Claude Code does, so we're always the one to yield",
+  );
+});
+
+test("every other hook stays fire-and-forget", () => {
+  const settings = withGargoyleHooks({}).settings as any;
+  for (const event of ["Stop", "SessionStart", "SessionEnd"]) {
+    const hook = settings.hooks[event][0].hooks[0];
+    assert.match(hook.command, /-m 2 /, `${event} must not hold up an agent`);
+    assert.equal(hook.timeout, undefined);
+  }
+});
+
 test("running it twice changes nothing", () => {
   const once = withGargoyleHooks({}).settings;
   const twice = withGargoyleHooks(structuredClone(once));

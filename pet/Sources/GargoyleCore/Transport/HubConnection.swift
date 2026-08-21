@@ -11,6 +11,7 @@ public final class HubConnection {
   private let onSay: (String) -> Void
   private let onMenu: (Menu) -> Void
   private let onFocus: (String?, String?) -> Void
+  private let onRequest: ((id: String, summary: String)?) -> Void
   private var everConnected = false
   private var state = HubState()
   private var task: URLSessionWebSocketTask?
@@ -26,19 +27,22 @@ public final class HubConnection {
     onChange: @escaping (Snapshot?) -> Void,
     onSay: @escaping (String) -> Void = { _ in },
     onMenu: @escaping (Menu) -> Void = { _ in },
-    onFocus: @escaping (String?, String?) -> Void = { _, _ in }
+    onFocus: @escaping (String?, String?) -> Void = { _, _ in },
+    onRequest: @escaping ((id: String, summary: String)?) -> Void = { _ in }
   ) {
     url = URL(string: "ws://\(host):\(port)/socket")!
     self.onChange = onChange
     self.onSay = onSay
     self.onMenu = onMenu
     self.onFocus = onFocus
+    self.onRequest = onRequest
   }
 
   public func start() {
     // Until a socket is actually open we don't know anything, and saying so is the point.
     onChange(state.latest)
     onMenu(state.menu)
+    onRequest(state.pendingRequest)
     connect()
   }
 
@@ -74,6 +78,7 @@ public final class HubConnection {
           if let request = self.state.takeFocusRequest() {
             self.onFocus(request.app, request.term)
           }
+          self.onRequest(self.state.pendingRequest)
 
           // Coming back after being away is the one moment it greets you unprompted.
           if !self.everConnected {
@@ -96,6 +101,8 @@ public final class HubConnection {
     // told us the state changed is exactly what disappeared.
     state.dropped()
     onChange(state.latest)
+    onMenu(state.menu)
+    onRequest(state.pendingRequest)
 
     try? await Task.sleep(for: retryDelay)
     retryDelay = min(retryDelay * 2, Self.maxRetryDelay)
