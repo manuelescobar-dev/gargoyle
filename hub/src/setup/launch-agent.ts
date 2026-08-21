@@ -20,9 +20,18 @@ type AgentSpec = {
   name: string;
   /** PATH to run with. Omitted entirely rather than set empty when unknown. */
   path?: string;
+  /**
+   * Whether quitting should stick.
+   *
+   * `true` restarts it whatever happens, which is right for a daemon and wrong for anything
+   * with a Quit button — launchd relaunches it the instant it exits and the button can
+   * never win. `onCrash` restarts only on a non-zero exit, so a crash still brings it back
+   * and quitting means quitting.
+   */
+  restart: "always" | "onCrash";
 };
 
-function agentPlist({ label, args, logDir, name, path }: AgentSpec): string {
+function agentPlist({ label, args, logDir, name, path, restart }: AgentSpec): string {
   const environment = path
     ? `  <key>EnvironmentVariables</key>
   <dict>
@@ -45,7 +54,14 @@ ${args.map((arg) => `    <string>${xml(arg)}</string>`).join("\n")}
 ${environment}  <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
-  <true/>
+${
+  restart === "always"
+    ? "  <true/>"
+    : `  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>`
+}
   <key>StandardOutPath</key>
   <string>${xml(`${logDir}/${name}.log`)}</string>
   <key>StandardErrorPath</key>
@@ -74,7 +90,15 @@ export function plistFor({
   logDir: string;
   path?: string;
 }): string {
-  return agentPlist({ label: AGENT_LABEL, args: [node, script], logDir, name: "hub", path });
+  // Always: a hub that stays dead is a creature that lies, and there's no Quit button on it.
+  return agentPlist({
+    label: AGENT_LABEL,
+    args: [node, script],
+    logDir,
+    name: "hub",
+    path,
+    restart: "always",
+  });
 }
 
 /** The creature. Same mechanism, but it launches an app bundle rather than a script. */
@@ -84,5 +108,8 @@ export function petPlistFor({ app, logDir }: { app: string; logDir: string }): s
     args: [`${app}/Contents/MacOS/Gargoyle`],
     logDir,
     name: "pet",
+    // If you quit a creature, you meant it. `always` here made the Quit button unwinnable:
+    // launchd relaunched it the instant it exited, and it looked like the app ignoring you.
+    restart: "onCrash",
   });
 }

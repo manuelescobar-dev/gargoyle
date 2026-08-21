@@ -71,3 +71,25 @@ test("no PATH given means no PATH key, rather than an empty one", () => {
   const plist = plistFor({ node: "/n", script: "/s", logDir: "/logs" });
   assert.ok(!plist.includes("EnvironmentVariables"), "an empty PATH would be worse than none");
 });
+
+// The Quit button was unwinnable: KeepAlive:true relaunched the creature the instant it
+// exited, so quitting looked like the app ignoring you. Found by using it, not by testing it.
+test("quitting the creature sticks", () => {
+  const plist = petPlistFor({ app: "/Applications/Gargoyle.app", logDir: "/logs" });
+  assert.match(plist, /<key>SuccessfulExit<\/key>\s*<false\/>/, "only restart on a crash");
+  assert.ok(
+    !/<key>KeepAlive<\/key>\s*<true\/>/.test(plist),
+    "an unconditional KeepAlive is a Quit button that cannot win",
+  );
+});
+
+test("but a crashed creature still comes back", () => {
+  const plist = petPlistFor({ app: "/Applications/Gargoyle.app", logDir: "/logs" });
+  assert.ok(plist.includes("KeepAlive"), "quitting sticking must not mean crashing sticks too");
+});
+
+// The hub has no Quit button and a hub that stays dead is a creature that lies.
+test("the hub restarts whatever happens", () => {
+  const plist = plistFor({ node: "/n", script: "/s", logDir: "/logs" });
+  assert.match(plist, /<key>KeepAlive<\/key>\s*<true\/>/);
+});
