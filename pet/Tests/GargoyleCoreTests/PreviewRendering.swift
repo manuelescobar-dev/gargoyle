@@ -19,6 +19,7 @@ func renderPreviews() throws {
     ("needs-you", CreatureInputs(state: 3, load: 4, blocked: 1, mood: 0.5)),
     ("unknown", CreatureInputs(state: 8, load: 0, blocked: 0, mood: 0)),
   ]
+  let speaking: Set<String> = ["idle"]
 
   var root = URL(fileURLWithPath: #filePath)
   for _ in 0..<4 { root.deleteLastPathComponent() }
@@ -32,6 +33,7 @@ func renderPreviews() throws {
       withGaze.gazeX = 0.4
       withGaze.gazeY = 0.2
       view.pose = .from(withGaze)
+      if speaking.contains(name), side > 100 { view.speech = "nothing's on fire." }
 
       guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { continue }
       view.cacheDisplay(in: view.bounds, to: rep)

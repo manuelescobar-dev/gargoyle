@@ -7,9 +7,15 @@ public final class CreatureController {
   private let view: OctopusView
   private var inputs = CreatureInputs.from(nil)
   private var life = Liveliness()
+  private var persona = PersonaLoader.load()
+  private var speechUntil: Double = -1
   private var settled: OctopusPose
   private var clock: Double = 0
   private var link: CADisplayLink?
+
+  /// How long a line stays up. Long enough to read on a glance, short enough that it
+  /// isn't still sitting there next time you look over.
+  private static let speechDuration: Double = 6
 
   /// How fast it settles into a new pose. Slow enough to read as movement, quick enough
   /// that a blocked agent doesn't feel delayed.
@@ -32,6 +38,13 @@ public final class CreatureController {
   public func apply(_ snapshot: Snapshot?) {
     inputs = CreatureInputs.from(snapshot)
     refresh()
+  }
+
+  /// The hub decided something is worth saying; the persona decides how it sounds.
+  public func say(_ situation: String) {
+    guard let line = persona.line(for: situation) else { return }
+    view.speech = line
+    speechUntil = clock + Self.speechDuration
   }
 
   /// Bottom-right by default. It has a home and it stays there — a creature you have to
@@ -74,6 +87,7 @@ public final class CreatureController {
     // Asleep or hidden behind something is genuinely zero work — no frames, no gaze polling.
     guard inputs.state != 0, panel.occlusionState.contains(.visible) else { return }
     clock += 1.0 / 60
+    if view.speech != nil, clock > speechUntil { view.speech = nil }
     view.breath = clock * 1.05
     refresh()
   }

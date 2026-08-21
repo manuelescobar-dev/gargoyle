@@ -28,8 +28,17 @@ export function attachWebSocket(server: Server) {
     socket.on("error", () => clients.delete(socket));
   });
 
+  const sendAll = (payload: string) => {
+    for (const client of clients) {
+      if (client.readyState === client.OPEN) client.send(payload);
+    }
+  };
+
   return {
     publish: (snapshot: Snapshot) => broadcaster.publish(snapshot),
+    /// A situation key, not words. The creature's persona decides what that sounds like,
+    /// so swapping the creature swaps the voice.
+    speak: (situation: string) => sendAll(JSON.stringify({ t: "bubble", situation })),
     clientCount: () => clients.size,
   };
 }

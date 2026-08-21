@@ -69,3 +69,21 @@ func reconnects() {
   #expect(changed)
   #expect(state.latest?.blocked == 1)
 }
+
+@Test("a bubble message is heard without disturbing the state")
+func bubbleDoesNotClobberState() {
+  var state = HubState()
+  state.received(blockedFrame)
+
+  state.received(Data(#"{"t":"bubble","situation":"failed"}"#.utf8))
+  #expect(state.takeSituation() == "failed")
+  #expect(state.latest?.state == .needsYou, "a spoken line must not overwrite what's true")
+}
+
+@Test("a situation is delivered once, not on every frame")
+func situationIsConsumed() {
+  var state = HubState()
+  state.received(Data(#"{"t":"bubble","situation":"busy"}"#.utf8))
+  #expect(state.takeSituation() == "busy")
+  #expect(state.takeSituation() == nil, "otherwise it would repeat itself forever")
+}

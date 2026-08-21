@@ -12,10 +12,13 @@ let statusItem = StatusItemController()
 
 // Pushed, not polled: a closed socket is an unambiguous "we don't know", where a missed
 // poll is just a pause you might mistake for calm.
-let connection = HubConnection { snapshot in
-  creature.apply(snapshot)
-  statusItem.apply(MenuBarPresentation.from(snapshot))
-}
+let connection = HubConnection(
+  onChange: { snapshot in
+    creature.apply(snapshot)
+    statusItem.apply(MenuBarPresentation.from(snapshot))
+  },
+  onSay: { situation in creature.say(situation) }
+)
 connection.start()
 
 app.run()

@@ -9,7 +9,7 @@ import AppKit
 public final class CreaturePanel: NSPanel {
   public init() {
     super.init(
-      contentRect: NSRect(x: 0, y: 0, width: 96, height: 96),
+      contentRect: NSRect(x: 0, y: 0, width: 210, height: 210),
       styleMask: [.borderless, .nonactivatingPanel],
       backing: .buffered,
       defer: false

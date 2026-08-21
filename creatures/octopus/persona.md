@@ -27,6 +27,10 @@ It would never say "Great job!", never explain what it's about to do, and never 
 
 ## Lines
 
+Section names are the situation keys the pet looks up. At least three each: the creature
+must never say the same thing twice running, and repetition is the fastest way to make
+something feel dead.
+
 ### needs-you
 - "this one's been waiting."
 - "someone wants a word."
@@ -42,17 +46,17 @@ It would never say "Great job!", never explain what it's about to do, and never 
 - "failed. the suite, not you."
 - "hm. no."
 
-### speaking
-- "while you're here —"
-- "small thing."
-- "when you have a second."
+### greeting
+- "oh — you're back."
+- "hello again."
+- "there you are."
 
-### idle, popover opened, nothing to report
+### idle
 - "nothing's on fire."
 - "all quiet. suspiciously so."
 - "you could start something. or not."
 
-### many agents
+### busy
 - "that's a lot of arms."
 - "running out of arms here."
 - "six. we're doing six now, apparently."
