@@ -8,13 +8,22 @@ creatures/octopus/
   previews/       what each state looks like, rendered from the code
 ```
 
-The octopus's body is **drawn in code** — `OctopusPose` computes the geometry, `OctopusView`
-draws it. The mechanic is arithmetic (arms are a function of `load` and `blocked`), so every
-in-between state comes free where keyframing would need each one authored. See
-[decisions/0002](../decisions/0002-swift-and-rive-for-the-pet.md).
+Two ship: **octopus** (default) and **slime**. Pick one with `GARGOYLE_CREATURE=slime`.
 
-A future creature can still be a `.riv` fed the same inputs. The contract is the seam,
-not the file format.
+Bodies are **drawn in code** — a pose type computes geometry, a view draws it. The mechanic
+is arithmetic, so every in-between state comes free where keyframing would need each one
+authored. See [decisions/0002](../decisions/0002-swift-and-rive-for-the-pet.md).
+
+### Adding one means writing Swift
+
+This page used to say adding a creature was "authoring, not coding". That was true when
+creatures were going to be `.riv` files, and it stopped being true when we chose to draw
+them. It's a small conformance — `CreatureRenderer`, one method — but it is code, and
+saying otherwise was a claim the repo didn't honour.
+
+What *is* true, and is the part that matters: a creature receives `CreatureInputs` and
+nothing else. It never learns what an agent is, or that Claude Code exists. The slime was
+written to test exactly that, and it holds.
 
 Gargoyle is a roster. Creatures are swapped by hand, never automatically — your eye learns a creature's
 silhouette without you noticing, and rotating it on a timer would throw that away every morning.
@@ -32,11 +41,13 @@ with its own anatomy.
 > Must be detectable in peripheral vision at 48px.
 
 - **Octopus** — an arm extends past the body and waves it
+- **Slime** — having no arms, it extrudes a pseudopod and holds the ember out on that
 - **Crow** — hops to the edge, wings half-open, ember in beak
 - **Alien** — antenna cranes forward, third eye opens
-- **Slime** — a pseudopod extrudes and pulses
 
-Four anatomies, one meaning. That shared meaning is the language your eye learns, and it's the one thing a new
+The first two are built; the others are illustrations. Two anatomies, one meaning —
+and the second one deliberately has no limbs, because a contract that only works for
+creatures shaped like the first one isn't a contract. That shared meaning is the language your eye learns, and it's the one thing a new
 creature must not break.
 
 ## The nine states

@@ -3,7 +3,26 @@ import AppKit
 /// Draws an `OctopusPose`. Holds no rules of its own — every decision about what the
 /// creature does lives in the pose.
 @MainActor
-public final class OctopusView: CreatureView {
+public final class OctopusView: CreatureView, CreatureRenderer {
+  /// Satisfies `CreatureRenderer` — the octopus keeps its own richer pose behind it.
+  public func show(_ inputs: CreatureInputs, breath: Double) {
+    // Settle toward the new pose rather than cutting to it, then lay the small motions on
+    // top. States that snap are the tell that something is a sprite.
+    settled = .lerp(settled, .from(inputs), Self.easing)
+    pose = settled.animated(by: life.advance(to: breath))
+    self.breath = breath
+  }
+
+  /// Slow enough to read as movement, quick enough that a blocked agent doesn't feel delayed.
+  private static let easing = 0.14
+  private var settled: OctopusPose = .from(CreatureInputs.from(nil))
+
+  public func updateHitRegion() {
+    opaqueRegion = bounds.insetBy(dx: bounds.width * 0.12, dy: bounds.height * 0.12)
+  }
+
+  private var life = Liveliness()
+
   public var pose: OctopusPose = .from(CreatureInputs.from(nil)) {
     didSet {
       guard pose != oldValue else { return }  // nothing changed, nothing repaints
@@ -14,13 +33,6 @@ public final class OctopusView: CreatureView {
   /// Advanced by the host only while there's motion worth showing.
   public var breath: Double = 0 {
     didSet { needsDisplay = true }
-  }
-
-  /// Called when the creature itself is clicked — not the empty space around it.
-  public var onClick: (() -> Void)?
-
-  public override func mouseDown(with event: NSEvent) {
-    onClick?()
   }
 
   /// What it's saying, if anything. Nil most of the time, by design.

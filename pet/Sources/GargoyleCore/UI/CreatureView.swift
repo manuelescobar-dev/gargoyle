@@ -10,6 +10,14 @@ public class CreatureView: NSView {
   /// Where the creature actually is. Clicks outside it pass through to whatever's below.
   public var opaqueRegion: NSRect = .zero
 
+  /// Called when the creature itself is clicked — not the empty space around it. Lives
+  /// here rather than on any one creature, because clicking is the same everywhere.
+  public var onClick: (() -> Void)?
+
+  public override func mouseDown(with event: NSEvent) {
+    onClick?()
+  }
+
   public override func hitTest(_ point: NSPoint) -> NSView? {
     opaqueRegion.contains(convert(point, from: superview)) ? self : nil
   }

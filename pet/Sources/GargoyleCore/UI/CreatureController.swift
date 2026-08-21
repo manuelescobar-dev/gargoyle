@@ -15,12 +15,10 @@ public final class CreatureController {
   private var nudge: (id: String, text: String, replyable: Bool)?
   /// Reports an answered nudge.
   public var onReply: (String, String) -> Void = { _, _ in }
-  private let view: OctopusView
+  private let view: any CreatureRenderer
   private var inputs = CreatureInputs.from(nil)
-  private var life = Liveliness()
-  private var persona = PersonaLoader.load()
+  private var persona = PersonaLoader.load(creature: Creatures.chosen())
   private var speechUntil: Double = -1
-  private var settled: OctopusPose
   private var clock: Double = 0
   private var wasAsleep = false
   /// Set while push-to-talk is held.
@@ -37,10 +35,6 @@ public final class CreatureController {
   /// isn't still sitting there next time you look over.
   private static let speechDuration: Double = 6
 
-  /// How fast it settles into a new pose. Slow enough to read as movement, quick enough
-  /// that a blocked agent doesn't feel delayed.
-  private static let easing = 0.14
-
   /// How far away the cursor can be and still be worth looking at.
   private static let gazeReach: Double = 600
 
@@ -50,8 +44,8 @@ public final class CreatureController {
     .appending(path: "Library/Application Support/Gargoyle/home.json")
 
   public init() {
-    settled = .from(CreatureInputs.from(nil))
-    view = OctopusView(frame: panel.contentLayoutRect)
+    // Which creature is a name, not a code change.
+    view = Creatures.make(Creatures.chosen(), frame: panel.contentLayoutRect)
     view.autoresizingMask = [.width, .height]
     panel.contentView = view
     view.onClick = { [weak self] in self?.toggle() }
@@ -187,10 +181,9 @@ public final class CreatureController {
 
     // Settle toward the new pose rather than cutting to it, then lay the small motions
     // on top. States that snap are the tell that something is a sprite.
-    settled = .lerp(settled, .from(current), Self.easing)
-    view.pose = settled.animated(by: life.advance(to: clock))
+    view.show(current, breath: clock)
     // Clicks land on the creature; everywhere else they pass through to your work.
-    view.opaqueRegion = view.bounds.insetBy(dx: view.bounds.width * 0.12, dy: view.bounds.height * 0.12)
+    view.updateHitRegion()
   }
 
   private func startAnimating() {
@@ -218,7 +211,6 @@ public final class CreatureController {
     guard !asleep else { return }
     clock += 1.0 / 60
     if view.speech != nil, clock > speechUntil { view.speech = nil }
-    view.breath = clock * 1.05
     refresh()
   }
 }

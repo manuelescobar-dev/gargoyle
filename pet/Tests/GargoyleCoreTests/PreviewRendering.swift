@@ -26,20 +26,25 @@ func renderPreviews() throws {
   let out = root.appending(path: "creatures/octopus/previews")
   try FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
 
+  for creature in Creatures.names {
   for (name, inputs) in cases {
     for (suffix, side) in [("", 220.0), ("@48", 48.0)] {
-      let view = OctopusView(frame: NSRect(x: 0, y: 0, width: side, height: side))
+      let view = Creatures.make(creature, frame: NSRect(x: 0, y: 0, width: side, height: side))
       var withGaze = inputs
       withGaze.gazeX = 0.4
       withGaze.gazeY = 0.2
-      view.pose = .from(withGaze)
+      view.show(withGaze, breath: 1.0)
       if speaking.contains(name), side > 100 { view.speech = "nothing's on fire." }
 
       guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { continue }
       view.cacheDisplay(in: view.bounds, to: rep)
       guard let png = rep.representation(using: .png, properties: [:]) else { continue }
-      try png.write(to: out.appending(path: "\(name)\(suffix).png"))
+      let folder = out.deletingLastPathComponent().deletingLastPathComponent()
+        .appending(path: "\(creature)/previews")
+      try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+      try png.write(to: folder.appending(path: "\(name)\(suffix).png"))
     }
+  }
   }
   print("wrote previews to \(out.path)")
 }
