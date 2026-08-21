@@ -82,7 +82,14 @@ switch (process.argv[2]) {
         ? "✓ hub installed as a launch agent — it starts at login"
         : `· wrote ${plistPath}, but launchctl wouldn't load it. Run the hub with \`npm start\`.`,
     );
-    console.log("\nRun an agent, then `gargoyle doctor` to check events are arriving.");
+    // Found the hard way: Claude Code reads hooks when a session starts, so the session
+    // you ran this from will never fire them. Without saying so, the first five minutes
+    // are "I installed it and nothing happened".
+    console.log(
+      "\nHooks take effect in your NEXT Claude Code session — the one you ran this from\n" +
+        "already loaded its hooks at startup.\n\n" +
+        "Start a new session, then `gargoyle doctor` to confirm events are arriving.",
+    );
     break;
   }
 

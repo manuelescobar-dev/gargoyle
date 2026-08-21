@@ -47,3 +47,10 @@ which would let a nudge say *what* finished rather than just that something did.
 [#13](https://github.com/manuelescobar-dev/gargoyle/issues/13) needs to show *"wants to
 write src/auth/session.ts"* rather than just "blocked", and it's the door to approving
 from the popover.
+
+## Hooks load at session start
+
+Claude Code reads `settings.json` hooks when a session begins, so installing them has no
+effect on the session you installed from. `install` says so explicitly — without it the
+first five minutes are "I installed it and nothing happened", and the natural next move is
+to go looking for a bug that isn't there.
