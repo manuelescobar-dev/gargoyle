@@ -12,6 +12,20 @@ import { parseEvery } from "../domain/schedule.ts";
  * The hub never learns what CI is. It learns that a command produced something worth a
  * glance — which is what keeps this a surface rather than a suite.
  */
+/**
+ * Where an unprompted message goes — what you say when you start the conversation.
+ *
+ * ```json
+ * { "ask": "openclaw agent --session-id gargoyle -m \"$(cat)\"" }
+ * ```
+ *
+ * Without it the creature has nothing to say back, and says so rather than pretending.
+ */
+export function readAsk(config: unknown): string | null {
+  const command = (config as { ask?: unknown })?.ask;
+  return typeof command === "string" && command.trim() ? command : null;
+}
+
 export function readSources(config: unknown): { sources: ScheduledSource[]; problems: string[] } {
   const sources: ScheduledSource[] = [];
   const problems: string[] = [];

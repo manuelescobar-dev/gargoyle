@@ -37,7 +37,8 @@ public final class PopoverPanel: NSPanel {
     near creature: NSRect,
     onChoose: @escaping (String) -> Void,
     onDecide: @escaping (String, Bool) -> Void,
-    onReply: @escaping (String, String) -> Void
+    onReply: @escaping (String, String) -> Void,
+    onSay: @escaping (String) -> Void
   ) {
     self.onChoose = onChoose
 
@@ -45,7 +46,10 @@ public final class PopoverPanel: NSPanel {
       summary: summary,
       items: menu.items,
       request: request.map { PopoverContent.Request(id: $0.id, summary: $0.summary) },
+      // Always present. A field that only appears when the creature asked something means
+      // you can answer it but never start.
       nudge: nudge.flatMap { $0.replyable ? PopoverContent.Nudge(id: $0.id, text: $0.text) : nil },
+      canSpeakFirst: true,
       choose: { [weak self] id in
         self?.onChoose(id)
         self?.hide()
@@ -56,6 +60,10 @@ public final class PopoverPanel: NSPanel {
       },
       reply: { [weak self] id, text in
         onReply(id, text)
+        self?.hide()
+      },
+      say: { [weak self] text in
+        onSay(text)
         self?.hide()
       }
     )
@@ -107,9 +115,11 @@ struct PopoverContent: View {
   let items: [Menu.Item]
   let request: Request?
   let nudge: Nudge?
+  let canSpeakFirst: Bool
   let choose: (String) -> Void
   let decide: (String, Bool) -> Void
   let reply: (String, String) -> Void
+  let say: (String) -> Void
 
   @State private var answer = ""
   @FocusState private var answerFocused: Bool
@@ -118,6 +128,7 @@ struct PopoverContent: View {
     VStack(alignment: .leading, spacing: 0) {
       if let request { permission(request) }
       if let nudge { asking(nudge) }
+      if nudge == nil, canSpeakFirst { speakFirst() }
 
       Text(summary)
         .font(.system(size: 12, weight: .medium))
@@ -181,6 +192,29 @@ struct PopoverContent: View {
     .padding(.top, 12)
     .padding(.bottom, 10)
     .onAppear { answerFocused = true }
+
+    Divider().padding(.horizontal, 10)
+  }
+
+  /// Saying something unprompted.
+  ///
+  /// You always start it, it answers once, and it never follows up — which is what keeps
+  /// *personality is voice, not volume* true while still letting you talk to the thing.
+  @ViewBuilder
+  private func speakFirst() -> some View {
+    TextField("", text: $answer, prompt: Text("say something…"))
+      .textFieldStyle(.roundedBorder)
+      .font(.system(size: 12))
+      .focused($answerFocused)
+      .onSubmit {
+        let trimmed = answer.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        say(trimmed)
+      }
+      .padding(.horizontal, 14)
+      .padding(.top, 12)
+      .padding(.bottom, 10)
+      .onAppear { answerFocused = true }
 
     Divider().padding(.horizontal, 10)
   }

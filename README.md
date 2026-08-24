@@ -114,6 +114,19 @@ curl -s -X POST localhost:7373/nudge \
 Gargoyle asks when you're already looking, your answer becomes an agent turn, and Gargoyle
 stores none of it. It works just as well without OpenClaw — it never learned OpenClaw exists.
 
+### Talking to it
+
+Answering is one thing; starting a conversation is another. Set an `ask` command and the
+popover always has a field, and push-to-talk works with nothing pending:
+
+```json
+{ "ask": "openclaw agent --session-id gargoyle -m \"$(cat)\"" }
+```
+
+Click the creature and type, or hold ⌥Space and speak. It answers once in the bubble and
+never follows up — you always start it, which is what keeps it something you look at rather
+than something that talks to you.
+
 ### Two things that cost an afternoon to find
 
 **Use the `claude-cli` backend, not a token.** Pointing OpenClaw at Anthropic with an API

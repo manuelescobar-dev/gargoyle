@@ -64,7 +64,13 @@ let talk = PushToTalk(
   onStart: { creature.setListening(true) },
   onFinish: { said in
     creature.setListening(false)
-    guard let said, let pending = creature.pendingNudgeId else { return }
+    guard let said else { return }
+
+    // Nothing waiting means you started the conversation, rather than answering one.
+    guard let pending = creature.pendingNudgeId else {
+      creature.onSay(said)
+      return
+    }
     let escaped = said.replacingOccurrences(of: "\\", with: "\\\\")
       .replacingOccurrences(of: "\"", with: "\\\"")
     Task { await post("/reply", #"{"id":"\#(pending)","text":"\#(escaped)"}"#) }
@@ -73,10 +79,37 @@ let talk = PushToTalk(
 )
 talk.start()
 
+// Saying something unprompted. It answers once and never follows up.
+creature.onSay = { text in
+  Task {
+    let answer = await postForAnswer("/say", ["text": text])
+    if let answer { await MainActor.run { creature.heard(answer) } }
+  }
+}
+
 creature.onDecide = { id, approved in
   Task { await post("/decision", #"{"id":"\#(id)","decision":"\#(approved ? "allow" : "deny")"}"#) }
 }
 connection.start()
+
+/// Posts and returns what came back, for the one call that has an answer.
+func postForAnswer(_ path: String, _ body: [String: String]) async -> String? {
+  guard let url = URL(string: "http://127.0.0.1:7373\(path)"),
+        let payload = try? JSONSerialization.data(withJSONObject: body)
+  else { return nil }
+
+  var request = URLRequest(url: url)
+  request.httpMethod = "POST"
+  request.httpBody = payload
+  request.timeoutInterval = 90  // an agent turn is slower than a button press
+
+  guard let (data, _) = try? await URLSession.shared.data(for: request),
+        let reply = try? JSONDecoder().decode([String: String].self, from: data)
+  else { return nil }
+
+  Trace.log("say -> \(reply["text"] ?? "(nothing)")")
+  return reply["text"]
+}
 
 func post(_ path: String, _ body: String) async {
   guard let url = URL(string: "http://127.0.0.1:7373\(path)") else { return }

@@ -15,6 +15,8 @@ public final class CreatureController {
   private var nudge: (id: String, text: String, replyable: Bool)?
   /// Reports an answered nudge.
   public var onReply: (String, String) -> Void = { _, _ in }
+  /// Reports something you said unprompted.
+  public var onSay: (String) -> Void = { _ in }
   private let view: any CreatureRenderer
   private var inputs = CreatureInputs.from(nil)
   private var persona = PersonaLoader.load(creature: Creatures.chosen())
@@ -79,6 +81,12 @@ public final class CreatureController {
   /// What the creature last asked, if it's still waiting on an answer.
   public var pendingNudgeId: String? { nudge?.replyable == true ? nudge?.id : nil }
 
+  /// Shows what came back from something you said. You started it, so this costs nothing.
+  public func heard(_ answer: String) {
+    view.speech = answer
+    speechUntil = clock + Self.speechDuration * 2
+  }
+
   /// Clears the question once it's been answered by voice.
   public func answered() {
     nudge = nil
@@ -134,7 +142,8 @@ public final class CreatureController {
         self?.nudge = nil
         self?.view.speech = nil
         self?.onReply(id, text)
-      }
+      },
+      onSay: { [weak self] text in self?.onSay(text) }
     )
   }
 

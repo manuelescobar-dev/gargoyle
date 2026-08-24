@@ -27,6 +27,8 @@ export type HubHandlers = {
   onNudge?: (nudge: { text: string; replyTo?: string; expiresInMs?: number }) => void;
   /// Your answer to a nudge, on its way to wherever you said it should go.
   onReply?: (id: string, text: string) => void;
+  /// Something you said to the creature unprompted. Resolves with what to show back.
+  onSay?: (text: string) => Promise<string | null>;
 };
 
 /** Collects a request body, then hands it over. */
@@ -164,6 +166,23 @@ export function createHub(options: HubHandlers = {}) {
         }
         done(204);
       });
+      return;
+    }
+
+    // You starting a conversation, rather than answering one.
+    if (req.method === "POST" && req.url === "/say") {
+      void (async () => {
+        try {
+          const { text } = JSON.parse(await readBody(req));
+          if (typeof text === "string" && text.trim()) {
+            const answer = await options.onSay?.(text.trim());
+            if (answer) return done(200, JSON.stringify({ text: answer }));
+          }
+        } catch (error) {
+          console.log(`say failed: ${(error as Error).message}`);
+        }
+        done(204);
+      })();
       return;
     }
 

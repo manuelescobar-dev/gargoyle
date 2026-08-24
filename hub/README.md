@@ -3,6 +3,19 @@
 The part that decides things. See [../CLAUDE.md](../CLAUDE.md) for the rules and
 [../ENGINEERING.md](../ENGINEERING.md) for how it's structured.
 
+## Talking to it
+
+```json
+{ "ask": "openclaw agent --session-id gargoyle -m \"$(cat)\"" }
+```
+
+Whatever you say goes to this command on stdin, and **what it prints comes back as a
+bubble** — the one place Gargoyle reads a command's output rather than discarding it.
+Trimmed to a glance's worth, and given up on if it takes too long: a creature that goes
+silent for a minute waiting on a slow agent is worse than one that shrugs.
+
+Without an `ask` command the creature says so rather than pretending to listen.
+
 ## Declared sources
 
 Optional. Most people won't have any, and a hub with none costs nothing — the scheduler

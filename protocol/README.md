@@ -112,6 +112,7 @@ POST /action     {"id": "focus:s3"}
 POST /decision   {"id": "r7", "decision": "allow" | "deny"}
 POST /context    {"currentSession": "<terminal id>" | null}
 POST /reply      {"id": "n1", "text": "chicken and rice"}
+POST /say        {"text": "..."}  →  {"text": "..."}  — the one call that answers
 ```
 
 ## Not on the wire yet

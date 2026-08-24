@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { ask } from "./actions/ask.ts";
 import { deliverReply } from "./actions/reply.ts";
 import { levelFor, type Surroundings } from "./domain/attention.ts";
 import { PendingDecisions } from "./domain/decisions.ts";
@@ -11,7 +12,7 @@ import { type Snapshot, snapshot } from "./domain/state.ts";
 import { situationFor } from "./domain/voice.ts";
 import { startScheduler } from "./scheduler.ts";
 import { createHub, PORT } from "./server.ts";
-import { readSources } from "./setup/sources.ts";
+import { readAsk, readSources } from "./setup/sources.ts";
 import { attachWebSocket } from "./transport/websocket.ts";
 
 /**
@@ -44,6 +45,8 @@ const nudges = new NudgeQueue();
 /// Nudges we've asked but not yet heard back on, so a reply knows where to go.
 const asked = new Map<string, Nudge>();
 let nextNudgeId = 0;
+/// Where an unprompted message goes. Read from config below.
+let askCommand: string | null = null;
 
 /**
  * Surfaces a queued nudge, but only at a moment you're already looking and nothing more
@@ -135,6 +138,13 @@ const { server } = createHub({
 
   onDecision: (id, decision) => pending.answer(id, decision),
 
+  // You starting a conversation rather than answering one. Assigned below, once config
+  // has been read — a creature with nothing configured says so rather than pretending.
+  onSay: async (text) =>
+    askCommand
+      ? await ask(askCommand, text)
+      : "nothing's listening — set `ask` in ~/.gargoyle/config.json",
+
   onNudge: (nudge) => nudges.add(nudge),
 
   onReply: (id, text) => {
@@ -174,6 +184,9 @@ try {
 } catch (error) {
   console.log(`config: ${configPath} isn't valid JSON — ${(error as Error).message}`);
 }
+
+askCommand = readAsk(config);
+if (askCommand) console.log("config: you can talk to the creature");
 
 const { sources, problems } = readSources(config);
 for (const problem of problems) console.log(`config: ${problem}`);

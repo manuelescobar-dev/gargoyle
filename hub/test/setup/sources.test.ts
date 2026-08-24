@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { readSources } from "../../src/setup/sources.ts";
+import { readAsk, readSources } from "../../src/setup/sources.ts";
 
 test("a source reads the way you'd write it", () => {
   const { sources } = readSources({ sources: [{ run: "~/bin/check-ci", every: "5m" }] });
@@ -43,4 +43,16 @@ test("no config at all is fine — most people won't have one", () => {
 test("a config that isn't even a config doesn't throw", () => {
   assert.deepEqual(readSources("nope").sources, []);
   assert.deepEqual(readSources({ sources: "nope" }).sources, []);
+});
+
+test("an ask command is read when configured", () => {
+  assert.equal(readAsk({ ask: 'openclaw agent -m "$(cat)"' }), 'openclaw agent -m "$(cat)"');
+});
+
+// Most people won't configure one, and the creature should say so rather than pretend.
+test("no ask command is fine", () => {
+  assert.equal(readAsk({}), null);
+  assert.equal(readAsk(undefined), null);
+  assert.equal(readAsk({ ask: "   " }), null);
+  assert.equal(readAsk({ ask: 42 }), null);
 });
