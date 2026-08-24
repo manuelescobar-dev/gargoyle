@@ -69,22 +69,22 @@ public final class PopoverPanel: NSPanel {
     )
 
     let view = NSHostingView(rootView: content)
-    view.frame.size = view.fittingSize
     contentView = view
     hosting = view
-    setContentSize(view.fittingSize)
 
-    // Sits above the creature, nudged so it appears to rise out of it.
-    var origin = NSPoint(
-      x: creature.midX - frame.width / 2,
-      y: creature.maxY - creature.height * 0.18
+    // Lay it out before measuring. `fittingSize` on a fresh hosting view isn't final until
+    // SwiftUI has run a pass, and reading the window frame first gave whatever size the
+    // popover happened to be last time — which is why it landed somewhere new each click.
+    view.layoutSubtreeIfNeeded()
+    let size = view.fittingSize
+
+    let placed = PopoverPlacement.origin(
+      for: size,
+      near: creature,
+      on: NSScreen.main?.visibleFrame ?? creature
     )
-    if let screen = NSScreen.main {
-      origin.x = min(max(origin.x, screen.visibleFrame.minX + 8),
-                     screen.visibleFrame.maxX - frame.width - 8)
-      origin.y = min(origin.y, screen.visibleFrame.maxY - frame.height - 8)
-    }
-    setFrameOrigin(origin)
+    // One call, so the window is never briefly the old size at the new position.
+    setFrame(NSRect(origin: placed, size: size), display: false)
 
     alphaValue = 0
     orderFront(nil)
