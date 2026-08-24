@@ -52,6 +52,9 @@ export function attachWebSocket(server: Server, options: { onLastClientGone?: ()
     /// say here — someone else's question shouldn't come out in its voice.
     say: (id: string, text: string, replyable: boolean) =>
       sendAll(JSON.stringify({ t: "bubble", id, text, replyable })),
+    /// Whether the creature is working on something you said. A silent gap reads as
+    /// broken; this is what makes a slow answer legible as a slow answer.
+    thinking: (on: boolean) => sendAll(JSON.stringify({ t: "thinking", on })),
     /// Puts a permission question in front of the user.
     ask: (id: string, summary: string) => sendAll(JSON.stringify({ t: "request", id, summary })),
     /// Takes the question away again — answered, or nobody answered in time.

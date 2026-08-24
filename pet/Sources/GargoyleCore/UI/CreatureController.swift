@@ -23,6 +23,7 @@ public final class CreatureController {
   private var speechUntil: Double = -1
   private var clock: Double = 0
   private var wasAsleep = false
+  private var thinking = false
   private var escalation = Escalation()
   /// Set while push-to-talk is held.
   public private(set) var listening = false
@@ -81,10 +82,13 @@ public final class CreatureController {
   /// What the creature last asked, if it's still waiting on an answer.
   public var pendingNudgeId: String? { nudge?.replyable == true ? nudge?.id : nil }
 
-  /// Shows what came back from something you said. You started it, so this costs nothing.
-  public func heard(_ answer: String) {
-    view.speech = answer
-    speechUntil = clock + Self.speechDuration * 2
+  /// Whether it's working on something you said. Shown as moving dots, because a silent
+  /// gap is indistinguishable from being ignored.
+  public func setThinking(_ value: Bool) {
+    guard thinking != value else { return }
+    thinking = value
+    if !value, view.speech == Thinking.dots(at: clock) { view.speech = nil }
+    refresh()
   }
 
   /// Clears the question once it's been answered by voice.
@@ -192,6 +196,9 @@ public final class CreatureController {
     // tell how long a bubble has been on screen. Everything else comes down the wire.
     if wasAsleep {
       current = CreatureInputs(state: 0, load: current.load, blocked: 0, mood: 0)
+    } else if thinking {
+      // About to speak, which is what `speaking` already looks like: drawn in and still.
+      current = CreatureInputs(state: 6, load: current.load, blocked: current.blocked, mood: current.mood)
     } else if listening {
       current = CreatureInputs(state: 7, load: current.load, blocked: current.blocked, mood: current.mood)
     } else if view.speech != nil {
@@ -231,7 +238,14 @@ public final class CreatureController {
     }
     guard !asleep else { return }
     clock += 1.0 / 60
-    if view.speech != nil, clock > speechUntil { view.speech = nil }
+
+    if thinking {
+      // Kept live so the dots move; nothing else may expire the bubble meanwhile.
+      view.speech = Thinking.dots(at: clock)
+      speechUntil = clock + Self.speechDuration
+    } else if view.speech != nil, clock > speechUntil {
+      view.speech = nil
+    }
     refresh()
   }
 }

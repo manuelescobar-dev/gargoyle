@@ -61,6 +61,16 @@ left unanswered costs nothing.
 The hub decides which; only the pet can perform it, because macOS won't grant Automation
 rights to a launchd agent — [decisions/0007](../decisions/0007-who-can-ask-for-permission.md).
 
+### `thinking` — it's working on something you said
+
+```jsonc
+{ "t": "thinking", "on": true }
+```
+
+An agent turn takes ten seconds or more. Without this the creature goes silent for that
+long, which is indistinguishable from having ignored you — and was the reason saying
+something felt unreliable even when it worked.
+
 ### `bubble` — the creature says something
 
 ```jsonc
@@ -112,7 +122,7 @@ POST /action     {"id": "focus:s3"}
 POST /decision   {"id": "r7", "decision": "allow" | "deny"}
 POST /context    {"currentSession": "<terminal id>" | null}
 POST /reply      {"id": "n1", "text": "chicken and rice"}
-POST /say        {"text": "..."}  →  {"text": "..."}  — the one call that answers
+POST /say        {"text": "..."}  →  202, the answer arrives over the socket
 ```
 
 ## Not on the wire yet

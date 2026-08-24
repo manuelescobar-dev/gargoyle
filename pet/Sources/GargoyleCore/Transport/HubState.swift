@@ -23,7 +23,11 @@ public struct HubState: Sendable {
     let summary: String?
     let text: String?
     let replyable: Bool?
+    let on: Bool?
   }
+
+  /// Whether it's working on something you said.
+  public private(set) var thinking = false
 
   /// A question from a source, in that source's own words. Kept separate from `situation`
   /// because someone else's question must not come out in the creature's voice.
@@ -47,8 +51,15 @@ public struct HubState: Sendable {
     // persona decides how it sounds.
     let tagged = try? JSONDecoder().decode(Tagged.self, from: data)
 
+    if tagged?.t == "thinking" {
+      thinking = tagged?.on == true
+      return false
+    }
+
     if tagged?.t == "bubble" {
       if let text = tagged?.text, let id = tagged?.id {
+        // The bubble is the answer, so nothing is still pending.
+        thinking = false
         pendingNudge = (id, text, tagged?.replyable ?? false)
       } else {
         situation = tagged?.situation
@@ -89,6 +100,8 @@ public struct HubState: Sendable {
     menu = .empty
     pendingRequest = nil
     pendingNudge = nil
+    // A creature stuck thinking forever is worse than one admitting it doesn't know.
+    thinking = false
   }
 
   public mutating func clearNudge() {

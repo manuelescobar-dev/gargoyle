@@ -138,12 +138,24 @@ const { server } = createHub({
 
   onDecision: (id, decision) => pending.answer(id, decision),
 
-  // You starting a conversation rather than answering one. Assigned below, once config
-  // has been read — a creature with nothing configured says so rather than pretending.
-  onSay: async (text) =>
-    askCommand
-      ? await ask(askCommand, text)
-      : "nothing's listening — set `ask` in ~/.gargoyle/config.json",
+  // You starting a conversation rather than answering one. The answer comes back over the
+  // socket, so the creature can show it's working instead of going quiet for a minute.
+  onSay: (text) => {
+    if (!askCommand) {
+      socket?.say(
+        `s${++nextNudgeId}`,
+        "nothing's listening — set `ask` in ~/.gargoyle/config.json",
+        false,
+      );
+      return;
+    }
+
+    socket?.thinking(true);
+    void ask(askCommand, text).then((answer) => {
+      socket?.thinking(false);
+      socket?.say(`s${++nextNudgeId}`, answer ?? "…nothing came back.", false);
+    });
+  },
 
   onNudge: (nudge) => nudges.add(nudge),
 

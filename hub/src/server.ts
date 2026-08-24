@@ -27,8 +27,14 @@ export type HubHandlers = {
   onNudge?: (nudge: { text: string; replyTo?: string; expiresInMs?: number }) => void;
   /// Your answer to a nudge, on its way to wherever you said it should go.
   onReply?: (id: string, text: string) => void;
-  /// Something you said to the creature unprompted. Resolves with what to show back.
-  onSay?: (text: string) => Promise<string | null>;
+  /**
+   * Something you said to the creature unprompted.
+   *
+   * Fire-and-forget: the answer comes back over the socket rather than on this request.
+   * Holding an HTTP call open for an agent turn meant a silent minute and a failure mode
+   * indistinguishable from a slow one.
+   */
+  onSay?: (text: string) => void;
 };
 
 /** Collects a request body, then hands it over. */
@@ -171,18 +177,16 @@ export function createHub(options: HubHandlers = {}) {
 
     // You starting a conversation, rather than answering one.
     if (req.method === "POST" && req.url === "/say") {
-      void (async () => {
+      void readBody(req).then((body) => {
         try {
-          const { text } = JSON.parse(await readBody(req));
-          if (typeof text === "string" && text.trim()) {
-            const answer = await options.onSay?.(text.trim());
-            if (answer) return done(200, JSON.stringify({ text: answer }));
-          }
+          const { text } = JSON.parse(body);
+          if (typeof text === "string" && text.trim()) options.onSay?.(text.trim());
         } catch (error) {
           console.log(`say failed: ${(error as Error).message}`);
         }
-        done(204);
-      })();
+        // Accepted. The answer arrives over the socket when it arrives.
+        done(202);
+      });
       return;
     }
 
