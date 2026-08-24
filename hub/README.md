@@ -3,6 +3,20 @@
 The part that decides things. See [../CLAUDE.md](../CLAUDE.md) for the rules and
 [../ENGINEERING.md](../ENGINEERING.md) for how it's structured.
 
+## Choosing your creature
+
+```bash
+node src/cli.ts configure            # pick from a list
+node src/cli.ts configure dinosaur   # or say which
+```
+
+Written to `creature` in your config and applied at once — the creature restarts rather
+than waiting for next login. `GARGOYLE_CREATURE=slime` still overrides it, for trying one
+without committing.
+
+The list comes from the `creatures/` directory rather than an array in code, so it can't
+drift from what actually ships.
+
 ## Talking to it
 
 ```json

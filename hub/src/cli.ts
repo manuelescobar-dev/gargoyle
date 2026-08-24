@@ -10,15 +10,38 @@ import {
 } from "node:fs";
 import { homedir, userInfo } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { HUB_PORT, withGargoyleHooks, withoutGargoyleHooks } from "./setup/claude-hooks.ts";
-import { type Checks, diagnose } from "./setup/doctor.ts";
-import { AGENT_LABEL, PET_LABEL, petPlistFor, plistFor } from "./setup/launch-agent.ts";
-
 // Everything resolves from where this repo actually lives and where this user's
 // home actually is. Nothing is baked in. The env vars exist so the installer can
 // be exercised against a throwaway directory instead of a real machine.
+import { createInterface } from "node:readline/promises";
+import { fileURLToPath } from "node:url";
+import { HUB_PORT, withGargoyleHooks, withoutGargoyleHooks } from "./setup/claude-hooks.ts";
+import { availableCreatures, chosenCreature, withCreature } from "./setup/creature.ts";
+import { type Checks, diagnose } from "./setup/doctor.ts";
+import { AGENT_LABEL, PET_LABEL, petPlistFor, plistFor } from "./setup/launch-agent.ts";
+
 const home = homedir();
+const gargoyleConfigPath = process.env.GARGOYLE_CONFIG ?? join(home, ".gargoyle", "config.json");
+
+function readGargoyleConfig(): Record<string, unknown> {
+  if (!existsSync(gargoyleConfigPath)) return {};
+  try {
+    return JSON.parse(readFileSync(gargoyleConfigPath, "utf8"));
+  } catch {
+    console.error(`✗ ${gargoyleConfigPath} isn't valid JSON, so nothing was changed.`);
+    process.exit(1);
+  }
+}
+
+function writeGargoyleConfig(config: Record<string, unknown>): void {
+  mkdirSync(dirname(gargoyleConfigPath), { recursive: true });
+  writeFileSync(gargoyleConfigPath, `${JSON.stringify(config, null, 2)}\n`);
+}
+
+/// Restarts the creature so a change is visible now rather than at next login.
+function restartCreature(): void {
+  launchctl("kickstart", "-k", `${domain}/${PET_LABEL}`);
+}
 const claudeDir = process.env.CLAUDE_CONFIG_DIR || join(home, ".claude");
 const settingsPath = join(claudeDir, "settings.json");
 const agentsDir = process.env.GARGOYLE_LAUNCH_AGENTS_DIR || join(home, "Library", "LaunchAgents");
@@ -156,6 +179,44 @@ switch (process.argv[2]) {
     break;
   }
 
+  case "configure": {
+    const creatures = availableCreatures();
+    const config = readGargoyleConfig();
+    const current = chosenCreature(config);
+
+    // A name straight off the command line skips the prompt — `gargoyle configure dinosaur`.
+    let picked = process.argv[3];
+
+    if (!picked) {
+      console.log("Which creature?\n");
+      creatures.forEach((name, index) => {
+        console.log(`  ${index + 1}. ${name}${name === current ? "   (current)" : ""}`);
+      });
+
+      const rl = createInterface({ input: process.stdin, output: process.stdout });
+      const answer = (await rl.question(`\nNumber, or enter to keep ${current}: `)).trim();
+      rl.close();
+
+      if (!answer) {
+        console.log(`\nKeeping ${current}.`);
+        break;
+      }
+      const index = Number(answer) - 1;
+      picked = creatures[index] ?? answer;
+    }
+
+    try {
+      writeGargoyleConfig(withCreature(config, picked, creatures));
+    } catch (error) {
+      console.error(`✗ ${(error as Error).message}`);
+      process.exit(1);
+    }
+
+    console.log(`\n✓ ${picked}`);
+    restartCreature();
+    break;
+  }
+
   case "doctor": {
     const health = await reachable("/health");
     const hooks = JSON.stringify(readSettings());
@@ -180,6 +241,7 @@ switch (process.argv[2]) {
 
   install     wire the hooks and run the hub at login
   uninstall   undo both, leaving your other settings alone
+  configure   choose which creature sits on your screen
   doctor      check it's actually working
 
 Everything is idempotent, and install backs up your settings first.`);

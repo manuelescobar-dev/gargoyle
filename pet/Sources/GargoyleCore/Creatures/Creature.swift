@@ -29,9 +29,25 @@ public enum Creatures {
     }
   }
 
-  /// `GARGOYLE_CREATURE=slime`. A setting, not a rebuild.
+  /// Which creature to be.
+  ///
+  /// `gargoyle configure` writes this into `~/.gargoyle/config.json`, so the choice
+  /// survives a restart and is somewhere you can see it. The environment variable stays as
+  /// an override for trying one out without committing to it.
   nonisolated public static func chosen() -> String {
-    let named = ProcessInfo.processInfo.environment["GARGOYLE_CREATURE"] ?? "octopus"
+    let named = ProcessInfo.processInfo.environment["GARGOYLE_CREATURE"] ?? configured()
     return names.contains(named) ? named : "octopus"
+  }
+
+  nonisolated private static func configured() -> String {
+    let path = ProcessInfo.processInfo.environment["GARGOYLE_CONFIG"]
+      ?? NSHomeDirectory() + "/.gargoyle/config.json"
+
+    guard let data = FileManager.default.contents(atPath: path),
+          let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          let creature = json["creature"] as? String
+    else { return "octopus" }
+
+    return creature
   }
 }

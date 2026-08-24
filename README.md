@@ -74,6 +74,17 @@ Check it's actually working — the useful part is that it can tell "wired up" f
 cd ../hub && node src/cli.ts doctor
 ```
 
+## Choosing your creature
+
+```bash
+node src/cli.ts configure
+```
+
+Three ship — an **octopus** that holds one agent per arm, a **slime** that suspends them
+inside itself, and a **dinosaur** that wears them as plates along its spine. Each one
+satisfies the same nine states with entirely different anatomy, which is the point:
+[creatures/README.md](creatures/README.md) is a contract, not a description of the octopus.
+
 ## Anything can be an ember
 
 Gargoyle ships the attention model and the Claude Code integration, and nothing else.

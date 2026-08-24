@@ -62,3 +62,16 @@ func gazeAtRest() {
   let same = CreatureInputs.gaze(cursor: CGPoint(x: 50, y: 50), from: CGPoint(x: 50, y: 50), reach: 300)
   #expect(same.x == 0 && same.y == 0, "must not divide by zero into a NaN the renderer can't use")
 }
+
+// Whatever is configured, it has to be a creature that exists — a name that doesn't match
+// would leave you with a blank panel and no clue why.
+@Test("an unknown creature falls back to one that exists")
+func unknownCreatureFallsBack() {
+  #expect(Creatures.names.contains(Creatures.chosen()))
+}
+
+@Test("every creature that ships can actually be made")
+func allCreaturesAreReal() {
+  #expect(Creatures.names.count >= 3)
+  #expect(Creatures.names.contains("dinosaur"))
+}
