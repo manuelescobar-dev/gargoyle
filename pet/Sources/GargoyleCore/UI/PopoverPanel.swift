@@ -94,6 +94,21 @@ public final class PopoverPanel: NSPanel {
     }
   }
 
+  /// Keeps the popover with the creature when you drag it.
+  ///
+  /// It's attached to the creature, so it has to move like it is — a panel that stays put
+  /// while the thing it belongs to slides away reads as two unrelated windows.
+  public func follow(_ creature: NSRect) {
+    guard isVisible else { return }
+    setFrameOrigin(
+      PopoverPlacement.origin(
+        for: frame.size,
+        near: creature,
+        on: NSScreen.main?.visibleFrame ?? creature
+      )
+    )
+  }
+
   public func hide() {
     NSAnimationContext.runAnimationGroup { context in
       context.duration = 0.10

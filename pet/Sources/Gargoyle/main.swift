@@ -6,9 +6,6 @@ import GargoyleCore
 let app = NSApplication.shared
 app.setActivationPolicy(.accessory)
 
-// One creature. Two on a screen looks like a bug in the creature rather than two copies
-// of it, and it happens easily — launchd has one, you open the app, and now there are two.
-if SingleInstance.alreadyRunning() { exit(0) }
 
 let creature = CreatureController()
 // The menu bar carries the menu until the popover exists (M2). The creature carries

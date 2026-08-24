@@ -60,7 +60,14 @@ public final class CreatureController {
       forName: NSWindow.didMoveNotification,
       object: panel,
       queue: .main
-    ) { [weak self] _ in MainActor.assumeIsolated { self?.rememberHome() } }
+    ) { [weak self] _ in
+      MainActor.assumeIsolated {
+        guard let self else { return }
+        self.rememberHome()
+        // Drag the creature and whatever it's showing comes with it.
+        self.popover.follow(self.panel.frame)
+      }
+    }
 
     // A remembered spot can end up on a screen that no longer exists.
     NotificationCenter.default.addObserver(
