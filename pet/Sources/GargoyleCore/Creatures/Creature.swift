@@ -18,12 +18,13 @@ public protocol CreatureRenderer: CreatureView {
 
 /// The creatures that ship. Picking one is a name, not a code change.
 public enum Creatures {
-  nonisolated public static let names = ["octopus", "slime"]
+  nonisolated public static let names = ["octopus", "slime", "dinosaur"]
 
   @MainActor
   public static func make(_ name: String, frame: NSRect) -> any CreatureRenderer {
     switch name {
     case "slime": return SlimeView(frame: frame)
+    case "dinosaur": return DinosaurView(frame: frame)
     default: return OctopusView(frame: frame)
     }
   }

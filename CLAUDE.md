@@ -81,7 +81,7 @@ pet/…/Domain/      Snapshot, CreatureInputs, OctopusPose. pure — no AppKit, 
 pet/…/Transport/   HubConnection. the socket, and nothing else
 pet/…/UI/          AppKit only. draws a pose, decides nothing
 creatures/         per creature: a persona.md, and previews rendered from the code
-                   two ship — GARGOYLE_CREATURE=slime picks the other
+                   three ship — GARGOYLE_CREATURE=dinosaur picks another
 protocol/          the hub↔pet wire format
 decisions/         why things are the way they are
 docs/              the story and the principles. no implementation detail lives here

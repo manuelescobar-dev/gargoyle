@@ -8,7 +8,8 @@ creatures/octopus/
   previews/       what each state looks like, rendered from the code
 ```
 
-Two ship: **octopus** (default) and **slime**. Pick one with `GARGOYLE_CREATURE=slime`.
+Three ship: **octopus** (default), **slime** and **dinosaur**. Pick one with
+`GARGOYLE_CREATURE=dinosaur`.
 
 Bodies are **drawn in code** — a pose type computes geometry, a view draws it. The mechanic
 is arithmetic, so every in-between state comes free where keyframing would need each one
@@ -44,12 +45,13 @@ with its own anatomy.
 
 - **Octopus** — an arm extends past the body and waves it
 - **Slime** — having no arms, it extrudes a pseudopod and holds the ember out on that
+- **Dinosaur** — no spare limb either, so the tail rears up over the body with the ember
 - **Crow** — hops to the edge, wings half-open, ember in beak
-- **Alien** — antenna cranes forward, third eye opens
 
-The first two are built; the others are illustrations. Two anatomies, one meaning —
-and the second one deliberately has no limbs, because a contract that only works for
-creatures shaped like the first one isn't a contract. That shared meaning is the language your eye learns, and it's the one thing a new
+The first three are built; the crow is an illustration. Three anatomies, one meaning — and
+each was chosen to break the previous one's mechanic. The slime has no limbs at all. The
+dinosaur has limbs, but not eight of them, so load went on its back as a row of plates.
+A contract that only works for creatures shaped like the first one isn't a contract. That shared meaning is the language your eye learns, and it's the one thing a new
 creature must not break.
 
 ## The nine states
