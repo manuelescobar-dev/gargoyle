@@ -104,8 +104,7 @@ you don't mind being asked.
 
 ## Using it with OpenClaw
 
-No plugin, no package — the two doors are enough. Point a skill or cron job at `/nudge`, and
-send the answer back with `openclaw agent`:
+No plugin, no package — the two doors are enough:
 
 ```bash
 curl -s -X POST localhost:7373/nudge \
@@ -114,6 +113,29 @@ curl -s -X POST localhost:7373/nudge \
 
 Gargoyle asks when you're already looking, your answer becomes an agent turn, and Gargoyle
 stores none of it. It works just as well without OpenClaw — it never learned OpenClaw exists.
+
+### Two things that cost an afternoon to find
+
+**Use the `claude-cli` backend, not a token.** Pointing OpenClaw at Anthropic with an API
+token or setup-token makes it a *third-party app*, which a Claude Pro/Max subscription does
+not cover — you get *"Third-party apps now draw from your extra usage"*. Running through the
+Claude Code CLI instead is covered, because the request comes from your signed-in session:
+
+```bash
+openclaw models set claude-cli/claude-opus-5
+```
+
+**Give the gateway a PATH that can find `claude`.** launchd hands services a minimal PATH
+with no `~/.local/bin`, so the backend can't find the binary and fails in a way that looks
+like an auth problem:
+
+```bash
+# in ~/Library/LaunchAgents/ai.openclaw.gateway.plist
+<key>PATH</key>
+<string>/Users/you/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+```
+
+The same trap bites Gargoyle's own hub, which is why `install` bakes your PATH into its plist.
 
 To disconnect completely:
 
